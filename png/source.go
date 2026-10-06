@@ -98,17 +98,35 @@ func newSource(m image.Image) *source {
 	return s
 }
 
-// rowBytes is the length of a scanline without its filter byte.
-func (s *source) rowBytes() int {
+// rowBytes is the length of a scanline without its filter byte; checkSize
+// makes sure it fits an int.
+func (s *source) rowBytes() int { return int(s.rowBytes64()) }
+
+// rowBytes64 is rowBytes in 64 bits, which hold it for any width below
+// 2^32, the most Encode accepts.
+func (s *source) rowBytes64() int64 {
+	w, depth := int64(s.w), int64(s.depth)
 	switch s.colorType {
 	case ctPalette:
-		return (s.w*int(s.depth) + 7) / 8
+		return (w*depth + 7) / 8
 	case ctGray:
-		return s.w * int(s.depth) / 8
+		return w * depth / 8
 	case ctRGB:
-		return s.w * 3 * int(s.depth) / 8
+		return w * 3 * depth / 8
 	}
-	return s.w * 4 * int(s.depth) / 8
+	return w * 4 * depth / 8
+}
+
+const maxInt = int64(^uint(0) >> 1)
+
+// checkSize rejects images whose filtered rows, filter bytes included, do
+// not fit an int: a band can hold them all. Within that, the row and band
+// arithmetic cannot overflow, also on 32-bit targets.
+func (s *source) checkSize() error {
+	if s.rowBytes64()+1 > maxInt/int64(s.h) {
+		return FormatError("image too large for this platform: " + strconv.Itoa(s.w) + "x" + strconv.Itoa(s.h))
+	}
+	return nil
 }
 
 // opaque reports whether every pixel of m is opaque, as image/png checks it.

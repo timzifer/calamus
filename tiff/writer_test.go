@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"io"
 	"math/rand/v2"
+	"strconv"
 	"testing"
 
 	xtiff "golang.org/x/image/tiff"
@@ -129,4 +131,32 @@ func FuzzRoundTrip(f *testing.F) {
 		roundTrip(t, ms[names[int(kind)%len(names)]], Encoder{
 			Options: Options{Compression: CompressionType(comp % 3), Predictor: pred}, Workers: int(workers%16) + 1})
 	})
+}
+
+// hugeImage has bounds only: reading a pixel fails the test, so that a
+// size is shown to be rejected before anything is allocated.
+type hugeImage struct{ w, h int }
+
+func (m hugeImage) Bounds() image.Rectangle { return image.Rect(0, 0, m.w, m.h) }
+func (m hugeImage) ColorModel() color.Model { return color.RGBAModel }
+func (m hugeImage) At(int, int) color.Color { panic("pixel read before the size was rejected") }
+
+// TestSizeLimits runs on 32-bit targets in CI too, where a row's length
+// alone can overflow an int.
+func TestSizeLimits(t *testing.T) {
+	// 4 bytes a pixel: 2^31 bytes, one more than the limit, and rows that
+	// overflow a 32-bit int (2^32) and, multiplied by the height, even an
+	// int64 on 64-bit targets.
+	huge := []hugeImage{{1 << 29, 1}, {1 << 30, 1}, {1 << 14, 1 << 15}}
+	if strconv.IntSize == 64 {
+		big := int64(1) << 40 // a variable: as a constant it overflows a 32-bit int
+		huge = append(huge, hugeImage{int(big), int(big)})
+	}
+	for _, m := range huge {
+		for _, workers := range []int{1, 4} {
+			if err := (&Encoder{Workers: workers}).Encode(io.Discard, m); err == nil {
+				t.Fatalf("%dx%d encoded", m.w, m.h)
+			}
+		}
+	}
 }

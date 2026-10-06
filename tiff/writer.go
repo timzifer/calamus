@@ -105,12 +105,15 @@ func (enc *Encoder) Encode(w io.Writer, m image.Image) error {
 		return errors.New("tiff: zero-size image")
 	}
 	src := newSource(m, enc.Predictor && enc.Compression != Uncompressed)
-	rowBytes := src.rowBytes()
-	if int64(rowBytes)*int64(b.Dy()) > 1<<31 {
+	// The pixel data stays below 2^31 bytes, so that a strip, which can
+	// hold all rows, fits an int also on 32-bit targets. Divided, as the
+	// product could overflow even int64.
+	if src.rowBytes64() > (1<<31-1)/int64(b.Dy()) {
 		return errors.New("tiff: image too large")
 	}
+	rowBytes := src.rowBytes()
 	workers := band.Workers(enc.Workers)
-	minRows := max(1, (minStripBytes+rowBytes-1)/rowBytes)
+	minRows := max(1, (minStripBytes-1)/rowBytes+1)
 	ys := band.Split(b.Dy(), minRows, 1, workers, stripsPerWorker)
 	// RowsPerStrip is one number for all strips but the last: use the
 	// first strip's height and cut the rest likewise.

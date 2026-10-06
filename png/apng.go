@@ -180,6 +180,9 @@ func frameSources(a *Animation, canvas image.Rectangle) ([]*source, error) {
 		default:
 			s.colorType, s.depth, s.bpp, s.pal = ctRGBA, 8, 4, nil
 		}
+		if err := s.checkSize(); err != nil {
+			return nil, err
+		}
 	}
 	return srcs, nil
 }
@@ -208,7 +211,7 @@ func (enc *Encoder) writeFrames(cw *chunkWriter, a *Animation, srcs []*source) e
 	level := enc.CompressionLevel
 	var units []unit
 	for f, s := range srcs {
-		rows := max(16, (minBandBytes+s.rowBytes()-1)/s.rowBytes())
+		rows := max(16, (minBandBytes-1)/s.rowBytes()+1)
 		ys := band.Split(s.h, rows, 1, workers, bandsPerWorker)
 		for i := range len(ys) - 1 {
 			units = append(units, unit{frame: f, band: pngBand{y0: ys[i], y1: ys[i+1]}, first: i == 0, last: i == len(ys)-2})
