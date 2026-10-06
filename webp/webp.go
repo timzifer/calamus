@@ -117,8 +117,8 @@ type Frame struct {
 // Animation is an animated WebP.
 type Animation struct {
 	Frames []Frame
-	// Width and Height are the canvas size; 0 means the union of the
-	// frames' bounds.
+	// Width and Height are the canvas size; 0 means the extent of the
+	// frames' bounds on that axis.
 	Width, Height int
 	// LoopCount is how often the animation plays; 0 means forever.
 	LoopCount int
@@ -143,7 +143,13 @@ func (enc *Encoder) EncodeAll(w io.Writer, a *Animation) error {
 		for _, f := range a.Frames {
 			u = u.Union(f.Image.Bounds())
 		}
-		cw, ch = u.Max.X, u.Max.Y
+		// Only the axes left at zero are inferred.
+		if cw == 0 {
+			cw = u.Max.X
+		}
+		if ch == 0 {
+			ch = u.Max.Y
+		}
 	}
 	if cw <= 0 || ch <= 0 || cw > 1<<24 || ch > 1<<24 {
 		return errors.New("webp: canvas size out of range")

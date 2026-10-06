@@ -235,3 +235,46 @@ func FuzzLossless(f *testing.F) {
 		samePixels(t, m, got)
 	})
 }
+
+// canvas reads the canvas size from an animation's VP8X chunk.
+func canvas(t testing.TB, b []byte) (w, h int) {
+	t.Helper()
+	if string(b[12:16]) != "VP8X" {
+		t.Fatal("no VP8X chunk")
+	}
+	get24 := func(p []byte) int { return int(p[0]) | int(p[1])<<8 | int(p[2])<<16 }
+	return get24(b[24:]) + 1, get24(b[27:]) + 1
+}
+
+func TestAnimationCanvas(t *testing.T) {
+	small := Frame{Image: image.NewNRGBA(image.Rect(0, 0, 4, 4))}
+	placed := Frame{Image: image.NewNRGBA(image.Rect(2, 4, 6, 8))}
+	for _, c := range []struct {
+		width, height int
+		frames        []Frame
+		w, h          int // 0: an error
+	}{
+		{10, 0, []Frame{small}, 10, 4},
+		{0, 10, []Frame{small}, 4, 10},
+		{0, 0, []Frame{small, placed}, 6, 8},
+		{10, 12, []Frame{small, placed}, 10, 12},
+		{0, 6, []Frame{small, placed}, 0, 0}, // placed ends at y 8
+		{5, 0, []Frame{small, placed}, 0, 0}, // and at x 6
+		{3, 3, []Frame{small}, 0, 0},
+	} {
+		var buf bytes.Buffer
+		err := EncodeAll(&buf, &Animation{Width: c.width, Height: c.height, Frames: c.frames})
+		if c.w == 0 {
+			if err == nil {
+				t.Fatalf("%dx%d: frame outside the canvas accepted", c.width, c.height)
+			}
+			continue
+		}
+		if err != nil {
+			t.Fatalf("%dx%d: %v", c.width, c.height, err)
+		}
+		if w, h := canvas(t, buf.Bytes()); w != c.w || h != c.h {
+			t.Fatalf("%dx%d: canvas %dx%d, want %dx%d", c.width, c.height, w, h, c.w, c.h)
+		}
+	}
+}
