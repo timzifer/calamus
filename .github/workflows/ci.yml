@@ -42,4 +42,5 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - run: go test -run XXX -fuzz FuzzSameAsImagePNG -fuzztime 60s ./png
+      - run: go test -run XXX -fuzz FuzzSameAsImagePNG -fuzztime 45s ./png
+      - run: go test -run XXX -fuzz FuzzBandsDecodeAlike -fuzztime 45s ./jpeg

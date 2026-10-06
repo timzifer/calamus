@@ -7,7 +7,7 @@ that any decoder reads. No cgo, every GOOS/GOARCH including `js/wasm`.
 | package | format | how it splits | status |
 |---|---|---|---|
 | `calamus/png` | PNG | bands of one zlib stream, each primed with its neighbour's last 32 KiB | ready |
-| `calamus/jpeg` | baseline JPEG | bands of MCU rows between restart markers | planned |
+| `calamus/jpeg` | baseline JPEG | bands of MCU rows between restart markers | ready |
 | `calamus/tiff` | TIFF | strips, compressed independently by design | planned |
 | `calamus/gif` | GIF | LZW bands, each starting with a clear code | planned |
 | `calamus/webp` | lossless WebP | see below | planned |
@@ -71,12 +71,34 @@ one band, so there is nothing lost below a few hundred kilobytes.
   only, run-length matches, precomputed Huffman tables.
 - Streaming: handing bands over as a renderer finishes them.
 
+## JPEG
+
+A drop-in for `image/jpeg` (4:2:0 baseline, grayscale for `*image.Gray`).
+With one worker it writes the very bytes `image/jpeg` writes (Go 1.27;
+the forward DCT is ported from it). With more, the scan is cut into bands
+of MCU rows, each one restart interval: a restart marker resets the DC
+predictions and byte-aligns the coder, so the bands encode independently
+and join into one ordinary scan that every decoder reads.
+
+```go
+import "github.com/timzifer/calamus/jpeg"
+
+err := jpeg.Encode(w, img, &jpeg.Options{Quality: 85}) // like image/jpeg's Encode
+err = (&jpeg.Encoder{Quality: 85, Workers: 0}).Encode(w, img)
+```
+
+Against `image/jpeg`, a synthetic photo at A4 and 150 dpi, 16 hardware
+threads: **6.2× faster** with 16 workers, as fast with one; the restart
+markers add 0.01–0.1 % to the file. Tests check that banded and unbanded
+files decode to the same pixels (`image/jpeg`, and libjpeg-turbo through
+Pillow for a sample), and a fuzz test does so for random images.
+
 ## Other formats
 
 The same trick works wherever a format lets a stream be cut into pieces
 that are coded independently and then concatenated:
 
-- **JPEG (baseline)**: yes, and well. Restart markers (`DRI`, then
+- **JPEG (baseline)**: yes, and well (done, see above). Restart markers (`DRI`, then
   `RST0`–`RST7` every n MCU rows) reset the DC predictors and byte-align the
   Huffman coder, so bands of MCU rows can be colour-converted, transformed,
   quantised and coded in parallel and joined with the markers. With the
