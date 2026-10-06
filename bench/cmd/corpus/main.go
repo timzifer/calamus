@@ -18,6 +18,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"go/format"
 	"io"
 	"net/http"
 	"os"
@@ -153,5 +154,9 @@ func pixels() error {
 		fmt.Fprintf(&b, "\t%q: %q,\n", n, sums[n])
 	}
 	b.WriteString("}\n")
-	return os.WriteFile(filepath.Join("corpus", "pixels.go"), []byte(b.String()), 0o644)
+	src, err := format.Source([]byte(b.String()))
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join("corpus", "pixels.go"), src, 0o644)
 }

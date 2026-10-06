@@ -33,6 +33,32 @@ Results are compared as ratios to the reference named in each result
 (`size/image-png`, …), never as absolute times: absolute times say more
 about the machine than about the encoder.
 
+## Latency, throughput, CPU and memory
+
+`go test -bench` times one encode at a time. `cmd/measure` measures what
+it cannot, each job in a fresh process with `GOMAXPROCS` set to its CPU
+budget, the implementations taking turns:
+
+- **one image** at budgets P = 1, 2, 4, …: time to encode it and the CPU
+  time it took;
+- **a batch** of independent images at the same budgets: the reference
+  on P goroutines, calamus with one worker per image, with P workers one
+  image at a time, and the mixes in between; throughput, CPU per image and
+  time per image;
+- **memory**: sampled peak heap, bytes allocated and the process's
+  high-water mark, cold and warm, with a control that only holds the
+  input; and animations written through a slow writer.
+
+```sh
+go run ./cmd/measure                      # short corpus, PNG and JPEG
+go run ./cmd/measure -corpus=full -runs=7
+go run ./cmd/measure -parts=memory -match=photo/large
+```
+
+It writes `reports/<date>-<cpu>-<os>.md` and `.json`: ratios only, with the
+machine, the method, the dependencies and the corpus checksums, and every
+run's ratios. A report holds for its machine and corpus.
+
 ## Configurations
 
 Each benchmark names its reference; a ratio means nothing without both
