@@ -1,5 +1,7 @@
 package gif
 
+import "errors"
+
 // GIF's LZW, as compress/lzw writes it (LSB first, no early change), cut
 // into bands: each band starts with a Clear code, so it needs no table
 // from the band before, and the bands' bit streams are spliced together
@@ -60,8 +62,9 @@ func (s *bitStream) finish() []byte {
 // width the decoder has reached, so the next band starts from a fresh
 // table and width without knowing this band's; the last band ends with
 // EOI. The code-width bookkeeping is compress/lzw's writer's, so a stream
-// of one band is the very stream compress/lzw writes.
-func lzwBand(pix [][]byte, litWidth uint, first, last bool) *bitStream {
+// of one band is the very stream compress/lzw writes; so is the error for
+// a pixel outside the literal codes.
+func lzwBand(pix [][]byte, litWidth uint, first, last bool) (*bitStream, error) {
 	var (
 		s        bitStream
 		clear    = uint32(1) << litWidth
@@ -100,6 +103,9 @@ func lzwBand(pix [][]byte, litWidth uint, first, last bool) *bitStream {
 	for _, row := range pix {
 		for _, c := range row {
 			literal := uint32(c)
+			if literal >= clear {
+				return nil, errLiteral
+			}
 			if saved == lzwNoCode {
 				saved = literal
 				continue
@@ -137,5 +143,7 @@ func lzwBand(pix [][]byte, litWidth uint, first, last bool) *bitStream {
 	} else {
 		s.put(clear, width)
 	}
-	return &s
+	return &s, nil
 }
+
+var errLiteral = errors.New("lzw: input byte too large for the litWidth")

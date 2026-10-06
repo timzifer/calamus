@@ -79,8 +79,9 @@ func (e *encoder) writeFrames(g *GIF, workers int) {
 		for y := u.y0; y < u.y1; y++ {
 			rows = append(rows, pm.Pix[y*pm.Stride:][:dx])
 		}
-		data[i] = lzwBand(rows, litWidths[u.frame], u.first, u.last)
-		return nil
+		var err error
+		data[i], err = lzwBand(rows, litWidths[u.frame], u.first, u.last)
+		return err
 	}, func(i int) error {
 		u := units[i]
 		if u.first {
