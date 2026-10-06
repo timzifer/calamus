@@ -37,6 +37,7 @@ type latencyRow struct {
 	Impl                  string
 	Time, CPU             ratio
 	SeveralBands          bool
+	Size                  num // output bytes over the reference's
 }
 
 type batchRow struct {
@@ -153,7 +154,8 @@ func (r *report) latency(fm string, f corpus.Fixture, budget int, res result) {
 			t = append(t, div(median(s.Wall), median(ref.Wall)))
 			c = append(c, div(float64(s.CPU), float64(ref.CPU)))
 		}
-		r.Latency = append(r.Latency, latencyRow{fm, f.Name, kind(f), budget, name, summarize(t), summarize(c), res.Runs[0][name].Bands})
+		r.Latency = append(r.Latency, latencyRow{fm, f.Name, kind(f), budget, name, summarize(t), summarize(c), res.Runs[0][name].Bands,
+			ndiv(float64(res.Runs[0][name].Bytes), float64(res.Runs[0]["ref"].Bytes))})
 	}
 }
 
@@ -273,16 +275,16 @@ func (r *report) markdown(name string) string {
 		p("## One image: latency and CPU\n\n")
 		for _, fm := range fms {
 			p("### %s, relative to %s (%s)\n\n", strings.ToUpper(fm), formats[fm].ref, formats[fm].settings)
-			p("Time to encode one image with as many workers as the budget P allows (one at P=1); in brackets the CPU time it took. bands: whether calamus split the image at the largest budget.\n\n")
+			p("Time to encode one image with as many workers as the budget P allows (one at P=1); in brackets the CPU time it took. bands: whether calamus split the image at the largest budget. size: output bytes relative to the reference's, with one worker and with the largest budget's.\n\n")
 			p("| fixture | kind |")
 			for _, bd := range m.Budgets {
 				p(" P=%d |", bd)
 			}
-			p(" bands |\n|---|---|")
+			p(" bands | size |\n|---|---|")
 			for range m.Budgets {
 				p("---|")
 			}
-			p("---|\n")
+			p("---|---|\n")
 			for _, f := range r.sortedFixtures() {
 				row := func(impl string, bd int) (latencyRow, bool) {
 					for _, l := range r.Latency {
@@ -297,15 +299,18 @@ func (r *report) markdown(name string) string {
 				}
 				p("| %s | %s |", f.Name, f.Kind)
 				bands := false
+				var last latencyRow
 				for _, bd := range m.Budgets {
 					if l, ok := row("calamus-"+strconv.Itoa(bd), bd); ok {
 						p(" %s [%s] |", l.Time, l.CPU)
 						bands = bands || l.SeveralBands
+						last = l
 					} else {
 						p(" |")
 					}
 				}
-				p(" %s |\n", yesNo(bands))
+				one, _ := row("calamus-1", m.Budgets[0])
+				p(" %s | %.3f, %.3f |\n", yesNo(bands), float64(one.Size), float64(last.Size))
 			}
 			p("\n")
 		}

@@ -41,6 +41,7 @@ type sample struct {
 	CPU      int64   // the whole loop, ns
 	N        int     // encodes in the loop
 	Bands    bool    // the output has several bands
+	Bytes    int     // output size
 	ImageLat []int64 // batch: each image's encode, ns
 }
 
@@ -126,6 +127,7 @@ func latency(j job, input any) (result, error) {
 	// Warm up, check the output, and size the loops by the slowest.
 	n := 1
 	bands := map[string]bool{}
+	size := map[string]int{}
 	for _, im := range is {
 		var buf bytes.Buffer
 		t := time.Now()
@@ -134,6 +136,7 @@ func latency(j job, input any) (result, error) {
 		}
 		n = max(n, int(minLoop/max(time.Since(t), time.Microsecond))+1)
 		bands[im.name] = severalBands(j.Format, buf.Bytes())
+		size[im.name] = buf.Len()
 	}
 	n = min(n, 1000)
 	var r result
@@ -141,7 +144,7 @@ func latency(j job, input any) (result, error) {
 		samples := map[string]sample{}
 		for k := range is {
 			im := is[(k+run)%len(is)]
-			s := sample{N: n, Bands: bands[im.name]}
+			s := sample{N: n, Bands: bands[im.name], Bytes: size[im.name]}
 			var buf bytes.Buffer
 			c := cpuTime()
 			for range n {
