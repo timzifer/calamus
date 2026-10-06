@@ -216,10 +216,15 @@ func TestInvalidSize(t *testing.T) {
 }
 
 func FuzzSameAsImagePNG(f *testing.F) {
+	// Small images, cut into small bands: a long input at the end of the
+	// fuzz time makes the run fail with "context deadline exceeded".
+	old := minBandBytes
+	minBandBytes = 4 << 10
+	f.Cleanup(func() { minBandBytes = old })
 	f.Add(uint16(10), uint16(10), uint8(0), uint8(4), int64(1))
 	f.Add(uint16(500), uint16(700), uint8(5), uint8(16), int64(2))
 	f.Fuzz(func(t *testing.T, w, h uint16, kind, workers uint8, seed int64) {
-		w, h = w%700+1, h%900+1
+		w, h = w%256+1, h%256+1
 		r := rand.New(rand.NewPCG(uint64(seed), 7))
 		ms := images(r, int(w), int(h))
 		names := []string{"rgba-opaque", "rgba-alpha", "nrgba-alpha", "gray", "gray16", "rgba64-opaque", "nrgba64-alpha", "paletted-2", "paletted-16", "paletted-256"}

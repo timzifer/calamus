@@ -12,18 +12,21 @@ import (
 // alignment.
 
 const (
-	nLiteral   = 256
-	nLength    = 24
-	nDistance  = 40
-	maxLength  = 4096
-	minMatch   = 3
-	predBits   = 4 // predictor tiles of 16×16 pixels
-	hashBits   = 16
-	maxChain   = 24
-	maxWindow  = 1 << 18 // how far back a match may reach, in pixels
-	minBandPix = 64 << 10
-	perWorker  = 2
+	nLiteral  = 256
+	nLength   = 24
+	nDistance = 40
+	maxLength = 4096
+	minMatch  = 3
+	predBits  = 4 // predictor tiles of 16×16 pixels
+	hashBits  = 16
+	maxChain  = 24
+	maxWindow = 1 << 18 // how far back a match may reach, in pixels
+	perWorker = 2
 )
+
+// minBandPix is the least number of pixels of a band; a variable so that
+// fuzz tests can cut small images.
+var minBandPix = 64 << 10
 
 // distanceMapTable maps the 120 short distance codes to (x, y) offsets:
 // 0xYX with X = 8 - x (RFC 9649, 4.2.2; as golang.org/x/image/vp8l reads it).

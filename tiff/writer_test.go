@@ -118,9 +118,12 @@ func TestSeveralStrips(t *testing.T) {
 }
 
 func FuzzRoundTrip(f *testing.F) {
+	old := minStripBytes
+	minStripBytes = 4 << 10 // small images, several strips
+	f.Cleanup(func() { minStripBytes = old })
 	f.Add(uint16(30), uint16(40), uint8(0), uint8(2), true, uint8(4), uint64(1))
 	f.Fuzz(func(t *testing.T, w, h uint16, kind, comp uint8, pred bool, workers uint8, seed uint64) {
-		w, h = w%600+1, h%600+1
+		w, h = w%256+1, h%256+1
 		ms := testImages(rand.New(rand.NewPCG(seed, 5)), int(w), int(h))
 		names := []string{"rgba", "nrgba", "gray", "gray16", "rgba64", "nrgba64", "paletted", "cmyk-generic"}
 		roundTrip(t, ms[names[int(kind)%len(names)]], Encoder{

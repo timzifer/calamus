@@ -115,10 +115,10 @@ type pngBand struct {
 // Band sizes: a band is at least minBandBytes of raw rows, so that its
 // setup (a compressor, a dictionary) stays small against its work; up to
 // bandsPerWorker bands per worker balance dense and sparse bands.
-const (
-	minBandBytes   = 512 << 10
-	bandsPerWorker = 2
-)
+// minBandBytes is a variable so that fuzz tests can cut small images.
+var minBandBytes = 512 << 10
+
+const bandsPerWorker = 2
 
 // writeIDATs encodes the image in bands on enc.Workers goroutines and
 // writes them in order as IDAT chunks, the first with the zlib header, a

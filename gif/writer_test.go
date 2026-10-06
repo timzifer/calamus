@@ -146,9 +146,12 @@ func TestEncodeTrueColour(t *testing.T) {
 }
 
 func FuzzDecodeAlike(f *testing.F) {
+	old := minBandBytes
+	minBandBytes = 4 << 10 // small images, several bands
+	f.Cleanup(func() { minBandBytes = old })
 	f.Add(uint16(100), uint16(80), uint8(3), uint8(16), uint8(4), uint64(1))
 	f.Fuzz(func(t *testing.T, w, h uint16, frames, colors, workers uint8, seed uint64) {
-		w, h = w%1500+1, h%1500+1
+		w, h = w%256+1, h%256+1
 		g := animation(rand.New(rand.NewPCG(seed, 3)), int(w), int(h), int(frames%5)+1, int(colors)%255+2)
 		sameFrames(t, encodeGIF(t, g, 1), encodeGIF(t, g, int(workers%32)+2))
 	})

@@ -91,10 +91,10 @@ const (
 // Strips: at least minStripBytes of raw rows, so that a strip's
 // compressor setup stays small against its work; up to stripsPerWorker
 // strips per worker.
-const (
-	minStripBytes   = 256 << 10
-	stripsPerWorker = 2
-)
+// minStripBytes is a variable so that fuzz tests can cut small images.
+var minStripBytes = 256 << 10
+
+const stripsPerWorker = 2
 
 var le = binary.LittleEndian
 
