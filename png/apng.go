@@ -2,12 +2,12 @@ package png
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"image"
 	"image/color"
 	"io"
-	"slices"
 	"time"
 
 	"github.com/timzifer/calamus/internal/band"
@@ -113,7 +113,9 @@ func (enc *Encoder) EncodeAll(w io.Writer, a *Animation) error {
 func frameSources(a *Animation, canvas image.Rectangle) ([]*source, error) {
 	srcs := make([]*source, len(a.Frames))
 	palette, opaqueAll, deep := true, true, true
-	var pal color.Palette
+	// Palettes are compared as written, in PLTE and tRNS: colours need not
+	// be comparable, and different colours may encode alike.
+	var plte, trns []byte
 	for i, f := range a.Frames {
 		if f.Image == nil {
 			return nil, FormatError("frame without image")
@@ -124,11 +126,15 @@ func frameSources(a *Animation, canvas image.Rectangle) ([]*source, error) {
 		}
 		s := newSource(f.Image)
 		srcs[i] = s
-		p, ok := f.Image.(*image.Paletted)
-		if !ok || (pal != nil && !slices.Equal(p.Palette, pal)) {
+		if _, ok := f.Image.(*image.Paletted); !ok || s.pal == nil {
 			palette = false
-		} else if pal == nil {
-			pal = p.Palette
+		} else if palette {
+			p, t := s.paletteChunks()
+			if i == 0 {
+				plte, trns = p, t
+			} else if !bytes.Equal(p, plte) || !bytes.Equal(t, trns) {
+				palette = false
+			}
 		}
 		if s.colorType == ctRGBA || s.colorType == ctPalette && hasAlpha(s.pal) {
 			opaqueAll = false

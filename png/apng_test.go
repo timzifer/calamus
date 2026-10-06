@@ -239,3 +239,44 @@ func TestDelayFraction(t *testing.T) {
 		}
 	}
 }
+
+// sliceColor is a valid color.Color that cannot be compared with ==.
+type sliceColor struct{ v []uint32 }
+
+func (c sliceColor) RGBA() (r, g, b, a uint32) { return c.v[0], c.v[1], c.v[2], 0xffff }
+
+func TestAnimationUncomparablePalette(t *testing.T) {
+	newPal := func() color.Palette {
+		return color.Palette{sliceColor{[]uint32{0, 0, 0}}, sliceColor{[]uint32{0xffff, 0, 0}}}
+	}
+	frame := func(pal color.Palette) image.Image {
+		m := image.NewPaletted(image.Rect(0, 0, 3, 2), pal)
+		for i := range m.Pix {
+			m.Pix[i] = uint8(i % 2)
+		}
+		return m
+	}
+	pal := newPal()
+	// One palette slice, separate slices with equal colours, and a
+	// different palette, which falls back to RGB.
+	for name, c := range map[string]struct {
+		second color.Palette
+		ct     uint8
+	}{
+		"shared":   {pal, ctPalette},
+		"equal":    {newPal(), ctPalette},
+		"distinct": {color.Palette{sliceColor{[]uint32{0, 0xffff, 0}}, color.White}, ctRGB},
+	} {
+		t.Run(name, func(t *testing.T) {
+			a := &Animation{Frames: []Frame{{Image: frame(pal)}, {Image: frame(c.second)}}}
+			checkAnimation(t, a, 2)
+			var buf bytes.Buffer
+			if err := EncodeAll(&buf, a); err != nil {
+				t.Fatal(err)
+			}
+			if ihdr, _, _, _, _ := splitAPNG(t, buf.Bytes()); ihdr[9] != c.ct {
+				t.Fatalf("colour type %d, want %d", ihdr[9], c.ct)
+			}
+		})
+	}
+}
