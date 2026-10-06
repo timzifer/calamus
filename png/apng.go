@@ -70,7 +70,7 @@ func (enc *Encoder) EncodeAll(w io.Writer, a *Animation) error {
 	if canvas.Min != (image.Point{}) {
 		return FormatError("the first frame must start at (0, 0)")
 	}
-	if canvas.Dx() <= 0 || canvas.Dy() <= 0 || canvas.Dx() >= 1<<31 || canvas.Dy() >= 1<<31 {
+	if canvas.Dx() <= 0 || canvas.Dy() <= 0 || int64(canvas.Dx()) >= 1<<31 || int64(canvas.Dy()) >= 1<<31 {
 		return FormatError("invalid canvas size")
 	}
 	srcs, err := frameSources(a, canvas)
