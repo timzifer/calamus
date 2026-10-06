@@ -78,6 +78,9 @@ func (enc *Encoder) Encode(w io.Writer, m image.Image) error {
 		return FormatError("invalid image size: " + strconv.FormatInt(mw, 10) + "x" + strconv.FormatInt(mh, 10))
 	}
 	src := newSource(m)
+	if err := src.checkPalette(); err != nil {
+		return err
+	}
 	bw := bufio.NewWriterSize(w, 64<<10)
 	cw := chunkWriter{w: bw}
 	cw.writeString(pngHeader)

@@ -215,6 +215,49 @@ func TestInvalidSize(t *testing.T) {
 	}
 }
 
+// palettedOnly hides *image.Paletted, to take the generic paletted path.
+type palettedOnly struct{ *image.Paletted }
+
+func TestPaletteLength(t *testing.T) {
+	for _, n := range []int{0, 1, 256, 257} {
+		pal := make(color.Palette, n)
+		for i := range pal {
+			pal[i] = color.Gray{uint8(i)}
+		}
+		m := image.NewPaletted(image.Rect(0, 0, 2, 2), pal)
+		ok := n >= 1 && n <= 256
+		for name, img := range map[string]image.Image{"paletted": m, "generic": palettedOnly{m}} {
+			t.Run(fmt.Sprintf("%s/%d", name, n), func(t *testing.T) {
+				var buf bytes.Buffer
+				err := Encode(&buf, img)
+				if !ok {
+					if err == nil {
+						t.Fatal("encoded")
+					}
+					return
+				}
+				if err != nil {
+					t.Fatal(err)
+				}
+				got, err := stdpng.Decode(&buf)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if !colorEq(got.At(1, 1), m.At(1, 1)) {
+					t.Fatal("pixel differs")
+				}
+			})
+		}
+		a := &Animation{Frames: []Frame{{Image: image.NewRGBA(m.Rect)}, {Image: m}}}
+		if err := EncodeAll(io.Discard, a); (err == nil) != ok {
+			t.Fatalf("animation with a %d-colour palette: %v", n, err)
+		}
+		if ok {
+			checkAnimation(t, &Animation{Frames: []Frame{{Image: m}, {Image: m}}}, 2)
+		}
+	}
+}
+
 func FuzzSameAsImagePNG(f *testing.F) {
 	// Small images, cut into small bands: a long input at the end of the
 	// fuzz time makes the run fail with "context deadline exceeded".

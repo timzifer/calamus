@@ -125,6 +125,9 @@ func frameSources(a *Animation, canvas image.Rectangle) ([]*source, error) {
 			return nil, FormatError("frame outside the canvas or empty")
 		}
 		s := newSource(f.Image)
+		if err := s.checkPalette(); err != nil {
+			return nil, err
+		}
 		srcs[i] = s
 		if _, ok := f.Image.(*image.Paletted); !ok || s.pal == nil {
 			palette = false

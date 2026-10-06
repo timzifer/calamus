@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"image"
 	"image/color"
+	"strconv"
 )
 
 // PNG colour types.
@@ -124,6 +125,14 @@ func opaque(m image.Image) bool {
 		}
 	}
 	return true
+}
+
+// checkPalette rejects palettes PLTE cannot hold, as image/png does.
+func (s *source) checkPalette() error {
+	if s.pal != nil && (len(s.pal) == 0 || len(s.pal) > 256) {
+		return FormatError("bad palette length: " + strconv.Itoa(len(s.pal)))
+	}
+	return nil
 }
 
 func (s *source) paletteChunks() (plte, trns []byte) {
