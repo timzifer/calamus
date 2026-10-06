@@ -303,3 +303,40 @@ func TestAnimationCanvasArea(t *testing.T) {
 		}
 	}
 }
+
+func TestAnimationTiming(t *testing.T) {
+	m := image.NewNRGBA(image.Rect(0, 0, 2, 2))
+	for name, a := range map[string]*Animation{
+		"nil first image":   {Frames: []Frame{{}}},
+		"nil later image":   {Frames: []Frame{{Image: m}, {}}},
+		"loops -1":          {Frames: []Frame{{Image: m}}, LoopCount: -1},
+		"loops 65536":       {Frames: []Frame{{Image: m}}, LoopCount: 65536},
+		"negative duration": {Frames: []Frame{{Image: m}, {Image: m, Duration: -time.Millisecond}}},
+	} {
+		if EncodeAll(&bytes.Buffer{}, a) == nil {
+			t.Fatalf("%s accepted", name)
+		}
+	}
+	for _, loops := range []int{0, 65535} {
+		var buf bytes.Buffer
+		if err := EncodeAll(&buf, &Animation{Frames: []Frame{{Image: m}}, LoopCount: loops}); err != nil {
+			t.Fatal(err)
+		}
+		if b := buf.Bytes(); string(b[30:34]) != "ANIM" || int(binary.LittleEndian.Uint16(b[42:])) != loops {
+			t.Fatalf("loop count %d not stored", loops)
+		}
+	}
+	// Durations are whole milliseconds, cut to what 24 bits hold.
+	for _, c := range []struct {
+		d  time.Duration
+		ms int
+	}{{0, 0}, {time.Millisecond, 1}, {(1<<24 - 1) * time.Millisecond, 1<<24 - 1}, {5 * time.Hour, 1<<24 - 1}} {
+		var buf bytes.Buffer
+		if err := EncodeAll(&buf, &Animation{Frames: []Frame{{Image: m, Duration: c.d}}}); err != nil {
+			t.Fatal(err)
+		}
+		if _, _, durs := frames(t, buf.Bytes()); durs[0] != c.ms {
+			t.Fatalf("%v: %d ms, want %d", c.d, durs[0], c.ms)
+		}
+	}
+}
