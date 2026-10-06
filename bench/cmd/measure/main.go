@@ -45,6 +45,7 @@ var (
 	outDir    = flag.String("out", "reports", "report directory")
 	verbose   = flag.Bool("v", false, "log every job")
 	match     = flag.String("match", "", "only fixtures whose name contains this")
+	nameF     = flag.String("name", "", "suffix of the report's file name")
 	exe       string
 	startTime = time.Now()
 )

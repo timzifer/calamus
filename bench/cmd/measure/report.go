@@ -235,6 +235,9 @@ func (r *report) animations(res map[string]map[bool]map[string]result) {
 
 func (r *report) write(dir string) error {
 	name := r.Meta.Date + "-" + slug(r.Meta.CPU) + "-" + r.Meta.OS
+	if *nameF != "" {
+		name += "-" + slug(*nameF)
+	}
 	js, err := json.MarshalIndent(r, "", " ")
 	if err != nil {
 		return err
@@ -310,7 +313,11 @@ func (r *report) markdown(name string) string {
 					}
 				}
 				one, _ := row("calamus-1", m.Budgets[0])
-				p(" %s | %.3f, %.3f |\n", yesNo(bands), float64(one.Size), float64(last.Size))
+				split := yesNo(bands)
+				if fm != "png" && fm != "jpeg" {
+					split = "-" // not detectable from the file
+				}
+				p(" %s | %.3f, %.3f |\n", split, float64(one.Size), float64(last.Size))
 			}
 			p("\n")
 		}

@@ -11,9 +11,14 @@ import (
 	"math"
 	"time"
 
+	"github.com/HugoSmits86/nativewebp"
+	xtiff "golang.org/x/image/tiff"
+
 	cgif "github.com/timzifer/calamus/gif"
 	cjpeg "github.com/timzifer/calamus/jpeg"
 	cpng "github.com/timzifer/calamus/png"
+	ctiff "github.com/timzifer/calamus/tiff"
+	cwebp "github.com/timzifer/calamus/webp"
 )
 
 // format is one output format and configuration: the reference encoder
@@ -41,6 +46,31 @@ var formats = map[string]format{
 		},
 		encode: func(w io.Writer, m any, n int) error {
 			return (&cjpeg.Encoder{Quality: 75, Workers: n}).Encode(w, m.(image.Image))
+		},
+	},
+	"tiff": {
+		name: "tiff", ref: "golang.org/x/image/tiff", settings: "Deflate",
+		refEncode: func(w io.Writer, m any) error {
+			return xtiff.Encode(w, m.(image.Image), &xtiff.Options{Compression: xtiff.Deflate})
+		},
+		encode: func(w io.Writer, m any, n int) error {
+			return (&ctiff.Encoder{Options: ctiff.Options{Compression: ctiff.Deflate}, Workers: n}).Encode(w, m.(image.Image))
+		},
+	},
+	"gif": {
+		name: "gif", ref: "image/gif", settings: "Plan 9 palette, Floyd-Steinberg",
+		refEncode: func(w io.Writer, m any) error { return stdgif.Encode(w, m.(image.Image), nil) },
+		encode: func(w io.Writer, m any, n int) error {
+			return (&cgif.Encoder{Workers: n}).Encode(w, m.(image.Image))
+		},
+	},
+	"webp": {
+		name: "webp", ref: "nativewebp v1.3.0", settings: "lossless; nativewebp at its default level, calamus/webp at its fixed effort",
+		refEncode: func(w io.Writer, m any) error {
+			return nativewebp.Encode(w, m.(image.Image), &nativewebp.Options{CompressionLevel: nativewebp.DefaultCompression})
+		},
+		encode: func(w io.Writer, m any, n int) error {
+			return (&cwebp.Encoder{Workers: n}).Encode(w, m.(image.Image))
 		},
 	},
 	// Animations, for memory: image/gif against calamus/gif, and APNG,
