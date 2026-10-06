@@ -130,11 +130,11 @@ func latency(j job, input any) (result, error) {
 	size := map[string]int{}
 	for _, im := range is {
 		var buf bytes.Buffer
-		t := time.Now()
+		t := nanotime()
 		if err := im.encode(&buf); err != nil {
 			return result{}, fmt.Errorf("%s: %v", im.name, err)
 		}
-		n = max(n, int(minLoop/max(time.Since(t), time.Microsecond))+1)
+		n = max(n, int(minLoop/max(time.Duration(nanotime()-t), time.Microsecond))+1)
 		bands[im.name] = severalBands(j.Format, buf.Bytes())
 		size[im.name] = buf.Len()
 	}
@@ -149,11 +149,11 @@ func latency(j job, input any) (result, error) {
 			c := cpuTime()
 			for range n {
 				buf.Reset()
-				t := time.Now()
+				t := nanotime()
 				if err := im.encode(&buf); err != nil {
 					return result{}, err
 				}
-				s.Wall = append(s.Wall, int64(time.Since(t)))
+				s.Wall = append(s.Wall, nanotime()-t)
 			}
 			s.CPU = cpuTime() - c
 			samples[im.name] = s
@@ -199,7 +199,7 @@ func batch(j job, input any) (result, error) {
 		var next atomic.Int64
 		var wg sync.WaitGroup
 		var firstErr atomic.Value
-		cpu, t0 := cpuTime(), time.Now()
+		cpu, t0 := cpuTime(), nanotime()
 		for range c.outer {
 			wg.Add(1)
 			go func() {
@@ -211,17 +211,17 @@ func batch(j job, input any) (result, error) {
 						return
 					}
 					buf.Reset()
-					t := time.Now()
+					t := nanotime()
 					if err := encode(&buf); err != nil {
 						firstErr.CompareAndSwap(nil, err)
 						return
 					}
-					s.ImageLat[i] = int64(time.Since(t))
+					s.ImageLat[i] = nanotime() - t
 				}
 			}()
 		}
 		wg.Wait()
-		s.Wall = []int64{int64(time.Since(t0))}
+		s.Wall = []int64{nanotime() - t0}
 		s.CPU = cpuTime() - cpu
 		err, _ := firstErr.Load().(error)
 		return s, err
