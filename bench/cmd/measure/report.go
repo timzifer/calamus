@@ -111,7 +111,7 @@ func newReport() *report {
 	}
 	if out, err := exec.Command("git", "rev-parse", "HEAD").Output(); err == nil {
 		m.Commit = strings.TrimSpace(string(out))
-		if st, err := exec.Command("git", "status", "--porcelain", "--", "..").Output(); err == nil && len(strings.TrimSpace(string(st))) > 0 {
+		if st, err := exec.Command("git", "status", "--porcelain", "--untracked-files=no", "--", "..").Output(); err == nil && len(strings.TrimSpace(string(st))) > 0 {
 			m.Commit += " (modified)"
 		}
 	}

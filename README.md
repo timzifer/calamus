@@ -41,25 +41,31 @@ err := png.EncodeAll(w, &png.Animation{Frames: []png.Frame{
 }})
 ```
 
-30 frames of 640×480: 5.6× faster than encoding the frames one by one
-with `image/png`. Tests decode every frame (wrapped as a still PNG) with
-`image/png` and check the sequence numbers; Pillow read the animation.
+Tests decode every frame (wrapped as a still PNG) with `image/png` and
+check the sequence numbers; Pillow read the animation.
 
 ### Speed
 
-Against `image/png` at the same compression level (`BestSpeed`), 16
-hardware threads (Ryzen 7 5800H), ratios only:
+Measured on one machine (Ryzen 7 5800H, 8 cores, 16 threads, Windows)
+over the [benchmark corpus](bench/README.md): ratios to `image/png` at the
+same level (`BestSpeed`), time per image, lower is faster. The
+[report](bench/reports/2026-10-06-amd-ryzen-7-5800h-with-radeon-graphics-windows.md) has every case, the method and the
+raw ratios; it holds for that machine and corpus.
 
 | images | 1 worker | 16 workers | size |
 |---|---|---|---|
-| PDF pages rendered by [cera](https://github.com/timzifer/cera): arXiv papers (16 pages) | 1.26× faster | 5.4× faster | +0.0 to +0.3 % |
-| … pdf.js test files (36 pages) | 1.43× | 3.2× | −2.6 to +3.5 % |
-| … technical drawings (8 pages) | 1.27× | 6.7× | −1.5 to +3.4 % |
-| synthetic photo, A4 at 150 dpi | 1.1× | 7.0× | 0.0 % |
-| synthetic user interface | 1.5× | 4.1× | +2.5 % |
+| real: photos, test graphics, document pages, diagrams (500² and larger) | 0.85–0.93 | 0.14–0.48; a 500² photo 0.93 (one band) | ±0.1 % |
+| synthetic: text-like page, noise (A4 at 150 dpi) | 0.88–0.94 | 0.12–0.17 | ±0.1 % |
+| a 64² photo | 0.93 | 1.02 (one band) | +0.1 % |
 
-(`go test -bench .` for the synthetic ones.) Small images are encoded as
-one band, so there is nothing lost below a few hundred kilobytes.
+What the workers cost: 16 workers spend 0.93–1.26× image/png's CPU time
+on one image. For many images at once, one worker per image is the better
+use of the cores: 1.05–1.29× image/png's throughput at 16 goroutines
+(0.81× on 64² images), where 16 workers on one image at a time reach
+0.11–0.78×. And memory:
+calamus/png holds the filtered rows of a band at once, so its peak heap
+is 3–50× image/png's and its process high-water mark up to 2.4× (the
+report's memory tables).
 
 ### How
 
@@ -106,9 +112,12 @@ err := jpeg.Encode(w, img, &jpeg.Options{Quality: 85}) // like image/jpeg's Enco
 err = (&jpeg.Encoder{Quality: 85, Workers: 0}).Encode(w, img)
 ```
 
-Against `image/jpeg`, a synthetic photo at A4 and 150 dpi, 16 hardware
-threads: **6.2× faster** with 16 workers, as fast with one; the restart
-markers add 0.01–0.1 % to the file. Tests check that banded and unbanded
+Against `image/jpeg` at quality 75 ([report](bench/reports/2026-10-06-amd-ryzen-7-5800h-with-radeon-graphics-windows.md), same machine
+and corpus as for PNG): with one worker as fast (0.97–1.01 of its time);
+with 16 workers 0.13–0.27 of its time on images of 500² and larger, at
+1.3–1.7× its CPU time and up to 115× its allocations; the restart markers
+add up to 0.1 % to the file. For a batch of images, one worker per image
+is as fast as image/jpeg on as many goroutines. Tests check that banded and unbanded
 files decode to the same pixels (`image/jpeg`, and libjpeg-turbo through
 Pillow for a sample), and a fuzz test does so for random images.
 
@@ -125,16 +134,12 @@ import "github.com/timzifer/calamus/tiff"
 err := tiff.Encode(w, img, &tiff.Options{Compression: tiff.Deflate, Predictor: true})
 ```
 
-A synthetic photo at A4 and 150 dpi, against x/image/tiff with Deflate, 16
-hardware threads:
-
-| | time | size |
-|---|---|---|
-| Deflate, 1 worker | as fast | same |
-| Deflate, 16 workers | 5.1× faster | +0.9 % |
-| Deflate with predictor, 16 workers | | −54 % |
-| LZW, 16 workers | 6.6× faster | +36 % |
-| LZW with predictor, 16 workers | 11.7× faster | −41 % |
+Against x/image/tiff with Deflate, time per image
+([report](bench/reports/2026-10-06-amd-ryzen-7-5800h-with-radeon-graphics-windows-tiff-gif-webp.md), same machine and corpus): with
+one worker 0.99–1.10 (pure noise 1.34); with 16 workers 0.14–0.51 on
+images of 500² and larger, but 1.48 on pure noise and 1.07 on a 64² photo;
+files up to 1.6 % larger. LZW and the predictor are other configurations,
+compared in `go test -bench TIFFConfigurations` in [bench](bench/README.md).
 
 Tests decode every colour type, compression, predictor and worker count
 with x/image/tiff and compare the pixels; libtiff (through Pillow) read
@@ -164,14 +169,11 @@ err := gif.EncodeAll(w, anim)  // like image/gif's EncodeAll
 err = gif.Encode(w, photo, nil) // quantised to Plan 9 with Floyd-Steinberg, on all cores
 ```
 
-Against `image/gif`, 16 hardware threads:
-
-| | 16 workers | size |
-|---|---|---|
-| animation, 30 frames of 640×480 | 6.0× faster | same |
-| one frame of 2400×1800 | 3.1× faster | +0.02 % |
-| A4 photo at 150 dpi, Floyd-Steinberg (default) | 6.5× faster | same |
-| A4 photo at 150 dpi, `draw.Src` | 6.4× faster | same |
+Against `image/gif`, quantising to Plan 9 with Floyd-Steinberg and
+encoding ([report](bench/reports/2026-10-06-amd-ryzen-7-5800h-with-radeon-graphics-windows-tiff-gif-webp.md), same machine and corpus):
+with one worker as fast (0.99–1.05 of its time); with 16 workers 0.12–0.23
+on images of 500² and larger, but 1.7 on a 64² photo; the same pixels,
+files up to 0.6 % larger.
 
 Tests check the bytes against `image/gif` with one worker, the decoded
 frames with many, and the dithering against `image/draw` bit for bit;
@@ -203,17 +205,15 @@ err := webp.Encode(w, img)
 err = webp.EncodeAll(w, &webp.Animation{Frames: []webp.Frame{{Image: f0, Duration: 50 * time.Millisecond}}})
 ```
 
-A4 at 150 dpi, against [nativewebp](https://github.com/HugoSmits86/nativewebp)
-(lossless WebP in pure Go) and `image/png`, 16 hardware threads:
-
-| | vs nativewebp, 1 worker | vs nativewebp, 16 workers | size vs nativewebp | size vs `image/png` |
-|---|---|---|---|---|
-| synthetic photo | 1.6× faster | 7.1× faster | −8 % | −32 % |
-| synthetic page | 2.3× faster | 15.4× faster | same | −52 % |
-
-libwebp (1.6, its default effort) still writes 12–29 % smaller files: it
-also uses a colour transform, region-wise prefix codes and a costlier
-LZ77 search. Those are the next steps.
+Against [nativewebp](https://github.com/HugoSmits86/nativewebp) v1.3.0
+(lossless WebP in pure Go) at its default level
+([report](bench/reports/2026-10-06-amd-ryzen-7-5800h-with-radeon-graphics-windows-tiff-gif-webp.md), same machine and corpus): with one
+worker 0.26–0.62 of its time, with 16 workers 0.07–0.19 on images of 500²
+and larger; files 2–8 % smaller on photos, graphics and diagrams, 29 % on
+a text-like page, 1 % larger on a document page. calamus/webp has one fixed
+effort, so these compare whole configurations. libwebp writes smaller
+files still: it also uses a colour transform, region-wise prefix codes and
+a costlier LZ77 search. Those are the next steps.
 
 ## Other formats
 
