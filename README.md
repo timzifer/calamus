@@ -6,7 +6,7 @@ that any decoder reads. No cgo, every GOOS/GOARCH including `js/wasm`.
 
 | package | format | how it splits | status |
 |---|---|---|---|
-| `calamus/png` | PNG | bands of one zlib stream, each primed with its neighbour's last 32 KiB | ready |
+| `calamus/png` | PNG, animated PNG (APNG) | bands of one zlib stream, each primed with its neighbour's last 32 KiB; frames concurrently | ready |
 | `calamus/jpeg` | baseline JPEG | bands of MCU rows between restart markers | ready |
 | `calamus/tiff` | TIFF | strips, compressed independently by design | ready |
 | `calamus/gif` | GIF, animated GIF | frames concurrently; LZW bands spliced bit by bit; Floyd-Steinberg as a wavefront | ready |
@@ -25,6 +25,25 @@ err := png.Encode(w, img) // like image/png's Encode, on all cores
 enc := png.Encoder{CompressionLevel: png.BestSpeed, Workers: 0} // 0 = GOMAXPROCS
 err = enc.Encode(w, img)
 ```
+
+### Animated PNG
+
+`png.EncodeAll` writes an APNG: every frame is a zlib stream of its own
+(the first in IDAT, the others in fdAT chunks), so frames are encoded
+concurrently, and the bands of a large frame as above. Decoders without
+APNG show the first frame. All frames share a colour type: the palette if
+every frame has the same one, else RGB or RGBA (16-bit if every frame is).
+
+```go
+err := png.EncodeAll(w, &png.Animation{Frames: []png.Frame{
+	{Image: f0, Delay: 40 * time.Millisecond},
+	{Image: f1, Delay: 40 * time.Millisecond, Dispose: png.DisposeBackground, Blend: png.BlendOver},
+}})
+```
+
+30 frames of 640×480: 5.6× faster than encoding the frames one by one
+with `image/png`. Tests decode every frame (wrapped as a still PNG) with
+`image/png` and check the sequence numbers; Pillow read the animation.
 
 ### Speed
 
