@@ -3,6 +3,7 @@ module github.com/timzifer/calamus/bench
 go 1.26.4
 
 require (
+	github.com/HugoSmits86/nativewebp v1.3.0
 	github.com/timzifer/calamus v0.0.0-00010101000000-000000000000
 	github.com/timzifer/cera v0.4.0
 	github.com/timzifer/figure v0.14.0

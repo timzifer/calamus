@@ -33,6 +33,33 @@ Results are compared as ratios to the reference named in each result
 (`size/image-png`, …), never as absolute times: absolute times say more
 about the machine than about the encoder.
 
+## Configurations
+
+Each benchmark names its reference; a ratio means nothing without both
+sides and their settings. "workers" rows differ only in calamus's worker
+count; "configuration" rows change what is encoded and are trade-offs,
+not the effect of workers.
+
+| benchmark | reference | compared | output contract | kind |
+|---|---|---|---|---|
+| `PNG/…/best-speed`, `…/default` | image/png at that level | calamus/png at the same named level, 1 and GOMAXPROCS workers | decodes to the input's pixels | workers |
+| `JPEG` | image/jpeg, quality 75, 4:2:0 | calamus/jpeg, quality 75 | decodes to image/jpeg's pixels (MSE ≤ 1 for Go < 1.27) | workers |
+| `TIFF` | x/image/tiff, Deflate | calamus/tiff, Deflate | decodes to the input's pixels | workers |
+| `TIFFConfigurations` | calamus/tiff, Deflate | Deflate + predictor, LZW, LZW + predictor | decodes to the input's pixels | configuration |
+| `GIF/…/floyd-steinberg`, `…/src` | image/gif, Plan 9 palette, that drawer | calamus/gif, same palette and drawer | decodes to image/gif's frame | workers (quantising and encoding) |
+| `GIFPaletted` | image/gif on a pre-quantised frame | calamus/gif on the same frame | decodes to the same indices | workers (LZW and file only) |
+| `WebP` | nativewebp v1.3.0, default level | nativewebp best speed and best compression; calamus/webp (fixed effort) | decodes to the input's 8-bit NRGBA | configuration |
+| `CrossFormat` | image/png, default level | calamus/png, calamus/webp | lossless at 8 bits; 16-bit inputs skipped | configuration (format) |
+
+Not compared, for want of an equivalent reference:
+
+- **APNG**: no other Go encoder writes it; encoding each frame as a still
+  PNG would measure frame compression, not an animation encoder.
+- **Animated GIF and WebP**: `BenchmarkEncodeAll` in the gif package
+  times generated animations; the corpus holds still images only.
+- **libwebp**: native code; a comparison would have to state its effort,
+  threads and binding, and is left out of this module.
+
 ## The corpus
 
 `go run ./cmd/corpus list` prints the full table. Each category is
