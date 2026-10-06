@@ -235,3 +235,108 @@ func FuzzLossless(f *testing.F) {
 		samePixels(t, m, got)
 	})
 }
+
+// canvas reads the canvas size from an animation's VP8X chunk.
+func canvas(t testing.TB, b []byte) (w, h int) {
+	t.Helper()
+	if string(b[12:16]) != "VP8X" {
+		t.Fatal("no VP8X chunk")
+	}
+	get24 := func(p []byte) int { return int(p[0]) | int(p[1])<<8 | int(p[2])<<16 }
+	return get24(b[24:]) + 1, get24(b[27:]) + 1
+}
+
+func TestAnimationCanvas(t *testing.T) {
+	small := Frame{Image: image.NewNRGBA(image.Rect(0, 0, 4, 4))}
+	placed := Frame{Image: image.NewNRGBA(image.Rect(2, 4, 6, 8))}
+	for _, c := range []struct {
+		width, height int
+		frames        []Frame
+		w, h          int // 0: an error
+	}{
+		{10, 0, []Frame{small}, 10, 4},
+		{0, 10, []Frame{small}, 4, 10},
+		{0, 0, []Frame{small, placed}, 6, 8},
+		{10, 12, []Frame{small, placed}, 10, 12},
+		{0, 6, []Frame{small, placed}, 0, 0}, // placed ends at y 8
+		{5, 0, []Frame{small, placed}, 0, 0}, // and at x 6
+		{3, 3, []Frame{small}, 0, 0},
+	} {
+		var buf bytes.Buffer
+		err := EncodeAll(&buf, &Animation{Width: c.width, Height: c.height, Frames: c.frames})
+		if c.w == 0 {
+			if err == nil {
+				t.Fatalf("%dx%d: frame outside the canvas accepted", c.width, c.height)
+			}
+			continue
+		}
+		if err != nil {
+			t.Fatalf("%dx%d: %v", c.width, c.height, err)
+		}
+		if w, h := canvas(t, buf.Bytes()); w != c.w || h != c.h {
+			t.Fatalf("%dx%d: canvas %dx%d, want %dx%d", c.width, c.height, w, h, c.w, c.h)
+		}
+	}
+}
+
+func TestAnimationCanvasArea(t *testing.T) {
+	tiny := []Frame{{Image: image.NewNRGBA(image.Rect(0, 0, 1, 1))}}
+	for _, c := range []struct {
+		w, h int
+		ok   bool
+	}{
+		{65536, 65536, false}, // 2^32 pixels
+		{65536, 65535, true},
+		{1 << 24, 1, true},
+		{1<<24 + 1, 1, false},
+		{1, 1<<24 + 1, false},
+	} {
+		var buf bytes.Buffer
+		err := EncodeAll(&buf, &Animation{Width: c.w, Height: c.h, Frames: tiny})
+		if (err == nil) != c.ok {
+			t.Fatalf("%dx%d: %v", c.w, c.h, err)
+		}
+		if c.ok {
+			if w, h := canvas(t, buf.Bytes()); w != c.w || h != c.h {
+				t.Fatalf("%dx%d: canvas %dx%d", c.w, c.h, w, h)
+			}
+		}
+	}
+}
+
+func TestAnimationTiming(t *testing.T) {
+	m := image.NewNRGBA(image.Rect(0, 0, 2, 2))
+	for name, a := range map[string]*Animation{
+		"nil first image":   {Frames: []Frame{{}}},
+		"nil later image":   {Frames: []Frame{{Image: m}, {}}},
+		"loops -1":          {Frames: []Frame{{Image: m}}, LoopCount: -1},
+		"loops 65536":       {Frames: []Frame{{Image: m}}, LoopCount: 65536},
+		"negative duration": {Frames: []Frame{{Image: m}, {Image: m, Duration: -time.Millisecond}}},
+	} {
+		if EncodeAll(&bytes.Buffer{}, a) == nil {
+			t.Fatalf("%s accepted", name)
+		}
+	}
+	for _, loops := range []int{0, 65535} {
+		var buf bytes.Buffer
+		if err := EncodeAll(&buf, &Animation{Frames: []Frame{{Image: m}}, LoopCount: loops}); err != nil {
+			t.Fatal(err)
+		}
+		if b := buf.Bytes(); string(b[30:34]) != "ANIM" || int(binary.LittleEndian.Uint16(b[42:])) != loops {
+			t.Fatalf("loop count %d not stored", loops)
+		}
+	}
+	// Durations are whole milliseconds, cut to what 24 bits hold.
+	for _, c := range []struct {
+		d  time.Duration
+		ms int
+	}{{0, 0}, {time.Millisecond, 1}, {(1<<24 - 1) * time.Millisecond, 1<<24 - 1}, {5 * time.Hour, 1<<24 - 1}} {
+		var buf bytes.Buffer
+		if err := EncodeAll(&buf, &Animation{Frames: []Frame{{Image: m, Duration: c.d}}}); err != nil {
+			t.Fatal(err)
+		}
+		if _, _, durs := frames(t, buf.Bytes()); durs[0] != c.ms {
+			t.Fatalf("%v: %d ms, want %d", c.d, durs[0], c.ms)
+		}
+	}
+}

@@ -2,12 +2,13 @@ package png
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"image"
 	"image/color"
 	"io"
-	"slices"
+	"strconv"
 	"time"
 
 	"github.com/timzifer/calamus/internal/band"
@@ -66,6 +67,9 @@ func (enc *Encoder) EncodeAll(w io.Writer, a *Animation) error {
 	if len(a.Frames) == 0 {
 		return errors.New("png: animation without frames")
 	}
+	if err := validate(a); err != nil {
+		return err
+	}
 	canvas := a.Frames[0].Image.Bounds()
 	if canvas.Min != (image.Point{}) {
 		return FormatError("the first frame must start at (0, 0)")
@@ -108,27 +112,53 @@ func (enc *Encoder) EncodeAll(w io.Writer, a *Animation) error {
 	return bw.Flush()
 }
 
+// validate rejects what acTL and fcTL cannot hold, before anything
+// is read or written.
+func validate(a *Animation) error {
+	// PNG's four-byte integers go up to 2^31-1.
+	if a.LoopCount < 0 || int64(a.LoopCount) > 1<<31-1 {
+		return FormatError("loop count out of range: " + strconv.Itoa(a.LoopCount))
+	}
+	for i, f := range a.Frames {
+		switch {
+		case f.Image == nil:
+			return FormatError("frame " + strconv.Itoa(i) + " without image")
+		case f.Dispose > DisposePrevious:
+			return FormatError("frame " + strconv.Itoa(i) + ": invalid dispose op " + strconv.Itoa(int(f.Dispose)))
+		case f.Blend > BlendOver:
+			return FormatError("frame " + strconv.Itoa(i) + ": invalid blend op " + strconv.Itoa(int(f.Blend)))
+		}
+	}
+	return nil
+}
+
 // frameSources chooses the animation's colour type and makes each frame's
 // source read its rows in it.
 func frameSources(a *Animation, canvas image.Rectangle) ([]*source, error) {
 	srcs := make([]*source, len(a.Frames))
 	palette, opaqueAll, deep := true, true, true
-	var pal color.Palette
+	// Palettes are compared as written, in PLTE and tRNS: colours need not
+	// be comparable, and different colours may encode alike.
+	var plte, trns []byte
 	for i, f := range a.Frames {
-		if f.Image == nil {
-			return nil, FormatError("frame without image")
-		}
 		b := f.Image.Bounds()
 		if b.Empty() || !b.In(canvas) {
 			return nil, FormatError("frame outside the canvas or empty")
 		}
 		s := newSource(f.Image)
+		if err := s.checkPalette(); err != nil {
+			return nil, err
+		}
 		srcs[i] = s
-		p, ok := f.Image.(*image.Paletted)
-		if !ok || (pal != nil && !slices.Equal(p.Palette, pal)) {
+		if _, ok := f.Image.(*image.Paletted); !ok || s.pal == nil {
 			palette = false
-		} else if pal == nil {
-			pal = p.Palette
+		} else if palette {
+			p, t := s.paletteChunks()
+			if i == 0 {
+				plte, trns = p, t
+			} else if !bytes.Equal(p, plte) || !bytes.Equal(t, trns) {
+				palette = false
+			}
 		}
 		if s.colorType == ctRGBA || s.colorType == ctPalette && hasAlpha(s.pal) {
 			opaqueAll = false
@@ -149,6 +179,9 @@ func frameSources(a *Animation, canvas image.Rectangle) ([]*source, error) {
 			s.colorType, s.depth, s.bpp, s.pal = ctRGBA, 16, 8, nil
 		default:
 			s.colorType, s.depth, s.bpp, s.pal = ctRGBA, 8, 4, nil
+		}
+		if err := s.checkSize(); err != nil {
+			return nil, err
 		}
 	}
 	return srcs, nil
@@ -178,7 +211,7 @@ func (enc *Encoder) writeFrames(cw *chunkWriter, a *Animation, srcs []*source) e
 	level := enc.CompressionLevel
 	var units []unit
 	for f, s := range srcs {
-		rows := max(16, (minBandBytes+s.rowBytes()-1)/s.rowBytes())
+		rows := max(16, (minBandBytes-1)/s.rowBytes()+1)
 		ys := band.Split(s.h, rows, 1, workers, bandsPerWorker)
 		for i := range len(ys) - 1 {
 			units = append(units, unit{frame: f, band: pngBand{y0: ys[i], y1: ys[i+1]}, first: i == 0, last: i == len(ys)-2})

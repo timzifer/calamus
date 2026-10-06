@@ -20,6 +20,19 @@ jobs:
       - run: go test ./...
       - run: go test -short -race ./...
 
+  test-386:
+    # Size checks must hold where int is 32 bits; cross-compiling alone
+    # does not run them.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go test -short ./...
+        env:
+          GOARCH: "386"
+
   build:
     runs-on: ubuntu-latest
     steps:

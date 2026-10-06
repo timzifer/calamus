@@ -78,6 +78,12 @@ func (enc *Encoder) Encode(w io.Writer, m image.Image) error {
 		return FormatError("invalid image size: " + strconv.FormatInt(mw, 10) + "x" + strconv.FormatInt(mh, 10))
 	}
 	src := newSource(m)
+	if err := src.checkPalette(); err != nil {
+		return err
+	}
+	if err := src.checkSize(); err != nil {
+		return err
+	}
 	bw := bufio.NewWriterSize(w, 64<<10)
 	cw := chunkWriter{w: bw}
 	cw.writeString(pngHeader)
@@ -125,7 +131,7 @@ const bandsPerWorker = 2
 // last one with the combined Adler-32.
 func (enc *Encoder) writeIDATs(cw *chunkWriter, src *source) error {
 	workers := band.Workers(enc.Workers)
-	rows := max(16, (minBandBytes+src.rowBytes()-1)/src.rowBytes())
+	rows := max(16, (minBandBytes-1)/src.rowBytes()+1)
 	ys := band.Split(src.h, rows, 1, workers, bandsPerWorker)
 	bands := make([]pngBand, len(ys)-1)
 	level := enc.CompressionLevel
@@ -166,7 +172,7 @@ func (bd *pngBand) encode(src *source, level CompressionLevel, last bool) error 
 	f := newFilterer(src, level)
 	if bd.y0 > 0 && level != NoCompression {
 		stride := src.rowBytes() + 1
-		d0 := max(0, bd.y0-(dictSize+stride-1)/stride)
+		d0 := max(0, bd.y0-((dictSize-1)/stride+1))
 		dict := f.rows(d0, bd.y0, make([]byte, 0, (bd.y0-d0)*stride))
 		f.dict = dict[max(0, len(dict)-dictSize):]
 	}

@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"image"
 	"image/color"
 	"io"
@@ -104,7 +105,9 @@ func writeChunk(w *bufio.Writer, typ string, data []byte) {
 // Frame is one frame of an animation; its image's bounds place it on the
 // canvas, at even coordinates (WebP stores offsets in units of two).
 type Frame struct {
-	Image    image.Image
+	Image image.Image
+	// Duration is stored in whole milliseconds; it must not be negative,
+	// and is cut to 2^24-1 ms (about 4 h 40 min), the most ANMF holds.
 	Duration time.Duration
 	// Blend composites the frame over the canvas; otherwise it replaces
 	// its region.
@@ -117,10 +120,11 @@ type Frame struct {
 // Animation is an animated WebP.
 type Animation struct {
 	Frames []Frame
-	// Width and Height are the canvas size; 0 means the union of the
-	// frames' bounds.
+	// Width and Height are the canvas size; 0 means the extent of the
+	// frames' bounds on that axis.
 	Width, Height int
-	// LoopCount is how often the animation plays; 0 means forever.
+	// LoopCount is how often the animation plays, up to 65535; 0 means
+	// forever.
 	LoopCount int
 	// Background is the canvas colour (a hint to players).
 	Background color.NRGBA
@@ -137,15 +141,34 @@ func (enc *Encoder) EncodeAll(w io.Writer, a *Animation) error {
 	if len(a.Frames) == 0 {
 		return errors.New("webp: animation without frames")
 	}
+	if a.LoopCount < 0 || a.LoopCount > 0xffff {
+		return errors.New("webp: loop count out of range (0 to 65535)")
+	}
+	for i, f := range a.Frames {
+		if f.Image == nil {
+			return fmt.Errorf("webp: frame %d without image", i)
+		}
+		if f.Duration < 0 {
+			return fmt.Errorf("webp: frame %d has a negative duration", i)
+		}
+	}
 	cw, ch := a.Width, a.Height
 	if cw == 0 || ch == 0 {
 		var u image.Rectangle
 		for _, f := range a.Frames {
 			u = u.Union(f.Image.Bounds())
 		}
-		cw, ch = u.Max.X, u.Max.Y
+		// Only the axes left at zero are inferred.
+		if cw == 0 {
+			cw = u.Max.X
+		}
+		if ch == 0 {
+			ch = u.Max.Y
+		}
 	}
-	if cw <= 0 || ch <= 0 || cw > 1<<24 || ch > 1<<24 {
+	// VP8X holds each side up to 2^24 and the area up to 2^32-1 pixels;
+	// the product of two sides that fit 24 bits cannot overflow int64.
+	if cw <= 0 || ch <= 0 || cw > 1<<24 || ch > 1<<24 || int64(cw)*int64(ch) > 1<<32-1 {
 		return errors.New("webp: canvas size out of range")
 	}
 	for _, f := range a.Frames {

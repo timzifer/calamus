@@ -44,7 +44,11 @@ func newSource(m image.Image, predictor bool) *source {
 	return s
 }
 
-func (s *source) rowBytes() int { return s.b.Dx() * s.bpp }
+// rowBytes is the length of a row; Encode checks rowBytes64 first, as
+// the product can overflow an int on 32-bit targets.
+func (s *source) rowBytes() int { return int(s.rowBytes64()) }
+
+func (s *source) rowBytes64() int64 { return int64(s.b.Dx()) * int64(s.bpp) }
 
 // rows returns rows [y0, y1), 0-based within the image.
 func (s *source) rows(y0, y1 int) []byte {

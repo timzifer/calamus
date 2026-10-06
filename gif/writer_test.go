@@ -181,3 +181,35 @@ func TestDitherFSIsImageDraw(t *testing.T) {
 		}
 	}
 }
+
+func TestLiteralOutOfRange(t *testing.T) {
+	for litWidth := 2; litWidth <= 8; litWidth++ {
+		pal := make(color.Palette, 1<<litWidth)
+		for i := range pal {
+			pal[i] = color.Gray{uint8(i)}
+		}
+		// A small frame, and one large enough for several bands with the
+		// bad pixel in the last.
+		for _, size := range []int{4, 1100} {
+			m := image.NewPaletted(image.Rect(0, 0, size, size), pal)
+			valid := litWidth == 8 // every byte is a literal
+			if !valid {
+				m.Pix[len(m.Pix)-1] = uint8(1 << litWidth)
+			}
+			for _, workers := range []int{1, 4} {
+				t.Run(fmt.Sprintf("lit%d/%d/w%d", litWidth, size, workers), func(t *testing.T) {
+					var b bytes.Buffer
+					err := (&Encoder{Workers: workers}).Encode(&b, m)
+					if (err == nil) != valid {
+						t.Fatalf("Encode: %v", err)
+					}
+					g := &GIF{Image: []*image.Paletted{m, m}, Delay: []int{0, 0}}
+					err = (&Encoder{Workers: workers}).EncodeAll(&b, g)
+					if (err == nil) != valid {
+						t.Fatalf("EncodeAll: %v", err)
+					}
+				})
+			}
+		}
+	}
+}

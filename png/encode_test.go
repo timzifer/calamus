@@ -12,6 +12,7 @@ import (
 	stdpng "image/png"
 	"io"
 	"math/rand/v2"
+	"strconv"
 	"testing"
 )
 
@@ -215,6 +216,49 @@ func TestInvalidSize(t *testing.T) {
 	}
 }
 
+// palettedOnly hides *image.Paletted, to take the generic paletted path.
+type palettedOnly struct{ *image.Paletted }
+
+func TestPaletteLength(t *testing.T) {
+	for _, n := range []int{0, 1, 256, 257} {
+		pal := make(color.Palette, n)
+		for i := range pal {
+			pal[i] = color.Gray{uint8(i)}
+		}
+		m := image.NewPaletted(image.Rect(0, 0, 2, 2), pal)
+		ok := n >= 1 && n <= 256
+		for name, img := range map[string]image.Image{"paletted": m, "generic": palettedOnly{m}} {
+			t.Run(fmt.Sprintf("%s/%d", name, n), func(t *testing.T) {
+				var buf bytes.Buffer
+				err := Encode(&buf, img)
+				if !ok {
+					if err == nil {
+						t.Fatal("encoded")
+					}
+					return
+				}
+				if err != nil {
+					t.Fatal(err)
+				}
+				got, err := stdpng.Decode(&buf)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if !colorEq(got.At(1, 1), m.At(1, 1)) {
+					t.Fatal("pixel differs")
+				}
+			})
+		}
+		a := &Animation{Frames: []Frame{{Image: image.NewRGBA(m.Rect)}, {Image: m}}}
+		if err := EncodeAll(io.Discard, a); (err == nil) != ok {
+			t.Fatalf("animation with a %d-colour palette: %v", n, err)
+		}
+		if ok {
+			checkAnimation(t, &Animation{Frames: []Frame{{Image: m}, {Image: m}}}, 2)
+		}
+	}
+}
+
 func FuzzSameAsImagePNG(f *testing.F) {
 	// Small images, cut into small bands: a long input at the end of the
 	// fuzz time makes the run fail with "context deadline exceeded".
@@ -230,4 +274,59 @@ func FuzzSameAsImagePNG(f *testing.F) {
 		names := []string{"rgba-opaque", "rgba-alpha", "nrgba-alpha", "gray", "gray16", "rgba64-opaque", "nrgba64-alpha", "paletted-2", "paletted-16", "paletted-256"}
 		same(t, ms[names[int(kind)%len(names)]], Encoder{CompressionLevel: BestSpeed, Workers: int(workers%32) + 1})
 	})
+}
+
+// hugeImage has bounds only: reading a pixel fails the test, so that a
+// size is shown to be rejected before anything is allocated.
+type hugeImage struct {
+	w, h  int
+	model color.Model
+}
+
+func (m hugeImage) Bounds() image.Rectangle { return image.Rect(0, 0, m.w, m.h) }
+func (m hugeImage) ColorModel() color.Model { return m.model }
+func (m hugeImage) At(int, int) color.Color { panic("pixel read before the size was rejected") }
+
+// TestSizeLimits runs on 32-bit targets in CI too: there the scanline
+// arithmetic overflows an int long before the PNG size limits.
+func TestSizeLimits(t *testing.T) {
+	var huge []hugeImage
+	if strconv.IntSize == 32 {
+		huge = []hugeImage{
+			{1 << 28, 4, color.Gray16Model}, // 2^29 bytes a row, counted as 2^32 bits
+			{1 << 30, 1, color.Gray16Model},
+			{int(maxInt), 1, color.GrayModel}, // the filter byte is one too many
+			{1 << 16, 1 << 15, color.GrayModel},
+		}
+	} else {
+		widest := int64(1)<<32 - 1 // a variable: as a constant it overflows a 32-bit int
+		w := int(widest)
+		huge = []hugeImage{
+			{w, w, color.Gray16Model},
+			{w, w/2 + 1, color.GrayModel}, // 2^32 bytes a row, filter byte included, 2^31 times
+		}
+	}
+	for _, m := range huge {
+		for _, workers := range []int{1, 4} {
+			if err := (&Encoder{Workers: workers}).Encode(io.Discard, m); err == nil {
+				t.Fatalf("%dx%d encoded", m.w, m.h)
+			}
+			a := &Animation{Frames: []Frame{{Image: m}}}
+			if err := (&Encoder{Workers: workers}).EncodeAll(io.Discard, a); err == nil {
+				t.Fatalf("%dx%d animation encoded", m.w, m.h)
+			}
+		}
+	}
+	// The tallest images still accepted for some widths, without encoding
+	// them: a row and its filter byte, h times, fill an int.
+	for _, w := range []int64{1, 1<<16 - 1, min(maxInt-1, 1<<32-1)} {
+		s := &source{w: int(w), h: int(maxInt / (w + 1)), colorType: ctGray, depth: 8}
+		if err := s.checkSize(); err != nil {
+			t.Fatalf("%dx%d: %v", s.w, s.h, err)
+		}
+		s.h++
+		if s.checkSize() == nil {
+			t.Fatalf("%dx%d accepted", s.w, s.h)
+		}
+	}
 }
