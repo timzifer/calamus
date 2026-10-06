@@ -37,10 +37,10 @@ const (
 
 // Bands: at least minBandBytes of pixels, so that a band's fresh table
 // costs little compression; up to bandsPerWorker per worker.
-const (
-	minBandBytes   = 512 << 10
-	bandsPerWorker = 2
-)
+// minBandBytes is a variable so that fuzz tests can cut small images.
+var minBandBytes = 512 << 10
+
+const bandsPerWorker = 2
 
 // unit is one band of one frame.
 type unit struct {

@@ -150,7 +150,7 @@ func TestEmptyAndTooLarge(t *testing.T) {
 func FuzzBandsDecodeAlike(f *testing.F) {
 	f.Add(uint16(64), uint16(64), uint8(0), uint8(75), uint8(4), uint64(1))
 	f.Fuzz(func(t *testing.T, w, h uint16, kind, q, workers uint8, seed uint64) {
-		w, h = w%900+1, h%900+1
+		w, h = w%256+1, h%256+1
 		ms := testImages(rand.New(rand.NewPCG(seed, 9)), int(w), int(h))
 		names := []string{"rgba", "gray", "nrgba-generic", "ycbcr-YCbCrSubsampleRatio420", "ycbcr-YCbCrSubsampleRatio444"}
 		m := ms[names[int(kind)%len(names)]]

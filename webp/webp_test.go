@@ -221,9 +221,12 @@ func TestAnimation(t *testing.T) {
 }
 
 func FuzzLossless(f *testing.F) {
+	old := minBandPix
+	minBandPix = 1 << 10 // small images, several bands
+	f.Cleanup(func() { minBandPix = old })
 	f.Add(uint16(20), uint16(20), uint8(0), true, uint8(4), uint64(1))
 	f.Fuzz(func(t *testing.T, w, h uint16, kind uint8, alpha bool, workers uint8, seed uint64) {
-		w, h = w%400+1, h%400+1
+		w, h = w%256+1, h%256+1
 		m := testImage(rand.New(rand.NewPCG(seed, 1)), int(w), int(h), alpha, int(kind%3))
 		got, err := xwebp.Decode(bytes.NewReader(encode(t, m, int(workers%32)+1)))
 		if err != nil {
