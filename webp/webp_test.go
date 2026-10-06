@@ -278,3 +278,28 @@ func TestAnimationCanvas(t *testing.T) {
 		}
 	}
 }
+
+func TestAnimationCanvasArea(t *testing.T) {
+	tiny := []Frame{{Image: image.NewNRGBA(image.Rect(0, 0, 1, 1))}}
+	for _, c := range []struct {
+		w, h int
+		ok   bool
+	}{
+		{65536, 65536, false}, // 2^32 pixels
+		{65536, 65535, true},
+		{1 << 24, 1, true},
+		{1<<24 + 1, 1, false},
+		{1, 1<<24 + 1, false},
+	} {
+		var buf bytes.Buffer
+		err := EncodeAll(&buf, &Animation{Width: c.w, Height: c.h, Frames: tiny})
+		if (err == nil) != c.ok {
+			t.Fatalf("%dx%d: %v", c.w, c.h, err)
+		}
+		if c.ok {
+			if w, h := canvas(t, buf.Bytes()); w != c.w || h != c.h {
+				t.Fatalf("%dx%d: canvas %dx%d", c.w, c.h, w, h)
+			}
+		}
+	}
+}

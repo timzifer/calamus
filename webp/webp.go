@@ -151,7 +151,9 @@ func (enc *Encoder) EncodeAll(w io.Writer, a *Animation) error {
 			ch = u.Max.Y
 		}
 	}
-	if cw <= 0 || ch <= 0 || cw > 1<<24 || ch > 1<<24 {
+	// VP8X holds each side up to 2^24 and the area up to 2^32-1 pixels;
+	// the product of two sides that fit 24 bits cannot overflow int64.
+	if cw <= 0 || ch <= 0 || cw > 1<<24 || ch > 1<<24 || int64(cw)*int64(ch) > 1<<32-1 {
 		return errors.New("webp: canvas size out of range")
 	}
 	for _, f := range a.Frames {
