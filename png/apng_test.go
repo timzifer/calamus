@@ -227,6 +227,40 @@ func TestAnimationErrors(t *testing.T) {
 	if EncodeAll(&buf, &Animation{Frames: []Frame{{Image: a}, {Image: out}}}) == nil {
 		t.Fatal("frame outside the canvas accepted")
 	}
+	for name, an := range map[string]*Animation{
+		"nil first image": {Frames: []Frame{{}}},
+		"nil later image": {Frames: []Frame{{Image: a}, {}}},
+		"dispose":         {Frames: []Frame{{Image: a, Dispose: DisposePrevious + 1}}},
+		"blend":           {Frames: []Frame{{Image: a}, {Image: a, Blend: 255}}},
+		"loops -1":        {Frames: []Frame{{Image: a}}, LoopCount: -1},
+	} {
+		if err := EncodeAll(&buf, an); err == nil {
+			t.Fatalf("%s accepted", name)
+		}
+	}
+	if big := int64(1) << 31; int64(int(big)) == big {
+		if EncodeAll(&buf, &Animation{Frames: []Frame{{Image: a}}, LoopCount: int(big)}) == nil {
+			t.Fatal("loop count 2^31 accepted")
+		}
+	}
+}
+
+func TestAnimationControlValues(t *testing.T) {
+	m := image.NewRGBA(image.Rect(0, 0, 4, 4))
+	for d := DisposeNone; d <= DisposePrevious; d++ {
+		for b := BlendSource; b <= BlendOver; b++ {
+			for _, loops := range []int{0, 1, 1<<31 - 1} {
+				var buf bytes.Buffer
+				if err := EncodeAll(&buf, &Animation{Frames: []Frame{{Image: m, Dispose: d, Blend: b}}, LoopCount: loops}); err != nil {
+					t.Fatal(err)
+				}
+				_, _, _, actl, frames := splitAPNG(t, buf.Bytes())
+				if c := frames[0].ctl; c[24] != byte(d) || c[25] != byte(b) || binary.BigEndian.Uint32(actl[4:]) != uint32(loops) {
+					t.Fatalf("dispose %d, blend %d, loops %d: fcTL %v, acTL %v", d, b, loops, c[24:], actl)
+				}
+			}
+		}
+	}
 }
 
 func TestDelayFraction(t *testing.T) {

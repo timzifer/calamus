@@ -8,6 +8,7 @@ import (
 	"image"
 	"image/color"
 	"io"
+	"strconv"
 	"time"
 
 	"github.com/timzifer/calamus/internal/band"
@@ -66,6 +67,9 @@ func (enc *Encoder) EncodeAll(w io.Writer, a *Animation) error {
 	if len(a.Frames) == 0 {
 		return errors.New("png: animation without frames")
 	}
+	if err := validate(a); err != nil {
+		return err
+	}
 	canvas := a.Frames[0].Image.Bounds()
 	if canvas.Min != (image.Point{}) {
 		return FormatError("the first frame must start at (0, 0)")
@@ -108,6 +112,26 @@ func (enc *Encoder) EncodeAll(w io.Writer, a *Animation) error {
 	return bw.Flush()
 }
 
+// validate rejects what acTL and fcTL cannot hold, before anything
+// is read or written.
+func validate(a *Animation) error {
+	// PNG's four-byte integers go up to 2^31-1.
+	if a.LoopCount < 0 || int64(a.LoopCount) > 1<<31-1 {
+		return FormatError("loop count out of range: " + strconv.Itoa(a.LoopCount))
+	}
+	for i, f := range a.Frames {
+		switch {
+		case f.Image == nil:
+			return FormatError("frame " + strconv.Itoa(i) + " without image")
+		case f.Dispose > DisposePrevious:
+			return FormatError("frame " + strconv.Itoa(i) + ": invalid dispose op " + strconv.Itoa(int(f.Dispose)))
+		case f.Blend > BlendOver:
+			return FormatError("frame " + strconv.Itoa(i) + ": invalid blend op " + strconv.Itoa(int(f.Blend)))
+		}
+	}
+	return nil
+}
+
 // frameSources chooses the animation's colour type and makes each frame's
 // source read its rows in it.
 func frameSources(a *Animation, canvas image.Rectangle) ([]*source, error) {
@@ -117,9 +141,6 @@ func frameSources(a *Animation, canvas image.Rectangle) ([]*source, error) {
 	// be comparable, and different colours may encode alike.
 	var plte, trns []byte
 	for i, f := range a.Frames {
-		if f.Image == nil {
-			return nil, FormatError("frame without image")
-		}
 		b := f.Image.Bounds()
 		if b.Empty() || !b.In(canvas) {
 			return nil, FormatError("frame outside the canvas or empty")
