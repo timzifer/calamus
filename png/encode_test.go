@@ -161,6 +161,9 @@ func images(r *rand.Rand, w, h int) map[string]image.Image {
 func TestSameAsImagePNG(t *testing.T) {
 	r := rand.New(rand.NewPCG(1, 2))
 	sizes := [][2]int{{1, 1}, {1, 37}, {17, 3}, {301, 199}, {640, 1500}}
+	if testing.Short() {
+		sizes = sizes[:4] // the race detector makes the large one slow
+	}
 	for _, sz := range sizes {
 		for name, m := range images(r, sz[0], sz[1]) {
 			for _, workers := range []int{1, 3, 16} {
