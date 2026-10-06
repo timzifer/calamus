@@ -8,7 +8,7 @@ that any decoder reads. No cgo, every GOOS/GOARCH including `js/wasm`.
 |---|---|---|---|
 | `calamus/png` | PNG | bands of one zlib stream, each primed with its neighbour's last 32 KiB | ready |
 | `calamus/jpeg` | baseline JPEG | bands of MCU rows between restart markers | ready |
-| `calamus/tiff` | TIFF | strips, compressed independently by design | planned |
+| `calamus/tiff` | TIFF | strips, compressed independently by design | ready |
 | `calamus/gif` | GIF | LZW bands, each starting with a clear code | planned |
 | `calamus/webp` | lossless WebP | see below | planned |
 
@@ -93,6 +93,35 @@ markers add 0.01–0.1 % to the file. Tests check that banded and unbanded
 files decode to the same pixels (`image/jpeg`, and libjpeg-turbo through
 Pillow for a sample), and a fuzz test does so for random images.
 
+## TIFF
+
+A drop-in for `golang.org/x/image/tiff`'s encoder: the same colour types
+and tags, plus **LZW** and the horizontal **predictor** for Deflate and
+LZW (x/image writes neither). Strips are compressed independently by
+design, so they are compressed concurrently; the IFD follows them.
+
+```go
+import "github.com/timzifer/calamus/tiff"
+
+err := tiff.Encode(w, img, &tiff.Options{Compression: tiff.Deflate, Predictor: true})
+```
+
+A synthetic photo at A4 and 150 dpi, against x/image/tiff with Deflate, 16
+hardware threads:
+
+| | time | size |
+|---|---|---|
+| Deflate, 1 worker | as fast | same |
+| Deflate, 16 workers | 5.1× faster | +0.9 % |
+| Deflate with predictor, 16 workers | | −54 % |
+| LZW, 16 workers | 6.6× faster | +36 % |
+| LZW with predictor, 16 workers | 11.7× faster | −41 % |
+
+Tests decode every colour type, compression, predictor and worker count
+with x/image/tiff and compare the pixels; libtiff (through Pillow) read
+all 30 combinations of a sample with several strips alike; the LZW coder
+(MSB first, with TIFF's early change) has a round-trip fuzz test.
+
 ## Other formats
 
 The same trick works wherever a format lets a stream be cut into pieces
@@ -108,7 +137,7 @@ that are coded independently and then concatenated:
   scale close to the core count. Optimised Huffman tables would need a
   first parallel pass to count symbols. Progressive JPEG is more involved.
 - **TIFF**: trivially; strips and tiles are compressed independently by
-  design.
+  design (done, see above).
 - **GIF**: partly. LZW cannot be primed, but each band can start with a
   clear code (as [gip](https://github.com/tenox7/gip) does). The palette is
   global: quantisation must come first, over the whole image.

@@ -1,3 +1,5 @@
 module github.com/timzifer/calamus
 
 go 1.26.4
+
+require golang.org/x/image v0.46.0

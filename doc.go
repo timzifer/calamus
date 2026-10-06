@@ -4,7 +4,7 @@
 //
 //   - calamus/png: PNG, a drop-in for image/png (bands of a zlib stream)
 //   - calamus/jpeg: baseline JPEG, a drop-in for image/jpeg (bands between restart markers)
-//   - calamus/tiff: TIFF (strips), planned
+//   - calamus/tiff: TIFF, a drop-in for golang.org/x/image/tiff's encoder (strips), with LZW and the predictor
 //   - calamus/gif: GIF (LZW bands), planned
 //   - calamus/webp: lossless WebP, planned
 //

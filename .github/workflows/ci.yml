@@ -44,3 +44,5 @@ jobs:
           go-version-file: go.mod
       - run: go test -run XXX -fuzz FuzzSameAsImagePNG -fuzztime 45s ./png
       - run: go test -run XXX -fuzz FuzzBandsDecodeAlike -fuzztime 45s ./jpeg
+      - run: go test -run XXX -fuzz FuzzLZW -fuzztime 30s ./tiff
+      - run: go test -run XXX -fuzz FuzzRoundTrip -fuzztime 30s ./tiff
