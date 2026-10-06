@@ -1,17 +1,32 @@
 # calamus
 
-A fast PNG encoder in pure Go: on all cores, no cgo, every GOOS/GOARCH
-including `js/wasm`. Its output is an ordinary PNG that any decoder reads;
-the filtered scanlines are byte for byte those `image/png` writes.
+Image encoders in pure Go that use all cores: each cuts the image into
+bands, encodes them concurrently and joins them into one ordinary file
+that any decoder reads. No cgo, every GOOS/GOARCH including `js/wasm`.
+
+| package | format | how it splits | status |
+|---|---|---|---|
+| `calamus/png` | PNG | bands of one zlib stream, each primed with its neighbour's last 32 KiB | ready |
+| `calamus/jpeg` | baseline JPEG | bands of MCU rows between restart markers | planned |
+| `calamus/tiff` | TIFF | strips, compressed independently by design | planned |
+| `calamus/gif` | GIF | LZW bands, each starting with a clear code | planned |
+| `calamus/webp` | lossless WebP | see below | planned |
+
+## PNG
+
+A drop-in for `image/png`; the filtered scanlines are byte for byte those
+`image/png` writes.
 
 ```go
-err := calamus.Encode(w, img) // like png.Encode, on all cores
+import "github.com/timzifer/calamus/png"
 
-enc := calamus.Encoder{CompressionLevel: calamus.BestSpeed, Workers: 0} // 0 = GOMAXPROCS
+err := png.Encode(w, img) // like image/png's Encode, on all cores
+
+enc := png.Encoder{CompressionLevel: png.BestSpeed, Workers: 0} // 0 = GOMAXPROCS
 err = enc.Encode(w, img)
 ```
 
-## Speed
+### Speed
 
 Against `image/png` at the same compression level (`BestSpeed`), 16
 hardware threads (Ryzen 7 5800H), ratios only:
@@ -27,7 +42,7 @@ hardware threads (Ryzen 7 5800H), ratios only:
 (`go test -bench .` for the synthetic ones.) Small images are encoded as
 one band, so there is nothing lost below a few hundred kilobytes.
 
-## How
+### How
 
 - **Bands, in parallel.** Each band of rows is filtered on its own (a row's
   filter needs only the previous row's raw pixels) and deflated as a raw
@@ -48,7 +63,7 @@ one band, so there is nothing lost below a few hundred kilobytes.
   `image/png` (the same header chunks, the same filtered bytes, the same
   decoded pixels), and a fuzz test does so for random images.
 
-## Not yet
+### Not yet
 
 - Each band allocates its own compressor (the standard library cannot
   reset one with a new dictionary): about 1 MB per band.
@@ -56,7 +71,7 @@ one band, so there is nothing lost below a few hundred kilobytes.
   only, run-length matches, precomputed Huffman tables.
 - Streaming: handing bands over as a renderer finishes them.
 
-## Beyond PNG
+## Other formats
 
 The same trick works wherever a format lets a stream be cut into pieces
 that are coded independently and then concatenated:

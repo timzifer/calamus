@@ -1,10 +1,10 @@
-package calamus
+package png
 
 import (
 	"bytes"
 	"image"
 	"image/color"
-	"image/png"
+	stdpng "image/png"
 	"math"
 	"math/rand/v2"
 	"runtime"
@@ -77,7 +77,7 @@ func BenchmarkEncode(b *testing.B) {
 		m := benchImages()[name]
 		var ref int
 		b.Run(name+"/image-png", func(b *testing.B) {
-			enc := png.Encoder{CompressionLevel: png.BestSpeed}
+			enc := stdpng.Encoder{CompressionLevel: stdpng.BestSpeed}
 			b.ReportAllocs()
 			for b.Loop() {
 				var buf bytes.Buffer

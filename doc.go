@@ -1,7 +1,12 @@
-// Package calamus writes PNG images fast, on all cores: the image is
-// filtered and deflated in bands concurrently, as pigz does for gzip, and
-// the bands are joined into one ordinary PNG that any decoder reads.
+// Package calamus is a family of image encoders in pure Go that encode on
+// all cores: each cuts the image into bands, encodes them concurrently and
+// joins them into one ordinary file of its format, readable by any decoder.
 //
-// It is meant as a drop-in for image/png's Encoder where encoding time
-// matters: rendered pages, screenshots, map tiles.
+//   - calamus/png: PNG, a drop-in for image/png (bands of a zlib stream)
+//   - calamus/jpeg: baseline JPEG (bands between restart markers), planned
+//   - calamus/tiff: TIFF (strips), planned
+//   - calamus/gif: GIF (LZW bands), planned
+//   - calamus/webp: lossless WebP, planned
+//
+// This package itself holds no code.
 package calamus

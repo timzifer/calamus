@@ -1,4 +1,4 @@
-package calamus
+package png
 
 import (
 	"bufio"
@@ -8,9 +8,10 @@ import (
 	"hash/crc32"
 	"image"
 	"io"
-	"runtime"
 	"strconv"
 	"sync"
+
+	"github.com/timzifer/calamus/internal/band"
 )
 
 // CompressionLevel is a deflate level, as in image/png.
@@ -59,7 +60,7 @@ type Encoder struct {
 // FormatError reports that an image cannot be encoded as PNG.
 type FormatError string
 
-func (e FormatError) Error() string { return "calamus: invalid format: " + string(e) }
+func (e FormatError) Error() string { return "png: invalid format: " + string(e) }
 
 // Encode writes m to w in PNG format with the default Encoder.
 func Encode(w io.Writer, m image.Image) error {
@@ -102,51 +103,39 @@ func (enc *Encoder) Encode(w io.Writer, m image.Image) error {
 	return bw.Flush()
 }
 
-// band is the result of encoding rows [y0, y1): deflate data ending on a
-// byte boundary and the Adler-32 of the filtered bytes it holds.
-type band struct {
+// pngBand is the result of encoding rows [y0, y1): deflate data ending on
+// a byte boundary and the Adler-32 of the filtered bytes it holds.
+type pngBand struct {
 	y0, y1 int
 	data   []byte
 	adler  uint32
 	n      int // filtered bytes
-	err    error
-	done   chan struct{}
 }
+
+// Band sizes: a band is at least minBandBytes of raw rows, so that its
+// setup (a compressor, a dictionary) stays small against its work; up to
+// bandsPerWorker bands per worker balance dense and sparse bands.
+const (
+	minBandBytes   = 512 << 10
+	bandsPerWorker = 2
+)
 
 // writeIDATs encodes the image in bands on enc.Workers goroutines and
 // writes them in order as IDAT chunks, the first with the zlib header, a
 // last one with the combined Adler-32.
 func (enc *Encoder) writeIDATs(cw *chunkWriter, src *source) error {
-	workers := enc.Workers
-	if workers <= 0 {
-		workers = runtime.GOMAXPROCS(0)
-	}
-	bands := planBands(src.h, src.rowBytes(), workers)
+	workers := band.Workers(enc.Workers)
+	rows := max(16, (minBandBytes+src.rowBytes()-1)/src.rowBytes())
+	ys := band.Split(src.h, rows, 1, workers, bandsPerWorker)
+	bands := make([]pngBand, len(ys)-1)
 	level := enc.CompressionLevel
-	sem := make(chan struct{}, workers)
-	for _, bd := range bands {
-		bd.done = make(chan struct{})
-	}
-	go func() {
-		for _, bd := range bands {
-			sem <- struct{}{}
-			go func() {
-				defer func() { <-sem; close(bd.done) }()
-				bd.encode(src, level, bd.y1 == src.h)
-			}()
-		}
-	}()
 	h := level.zlibHeader()
 	var adler uint32 = 1
-	for i, bd := range bands {
-		<-bd.done
-		if bd.err != nil {
-			// Wait for the rest, so that no goroutine outlives the call.
-			for _, rest := range bands[i+1:] {
-				<-rest.done
-			}
-			return bd.err
-		}
+	err := band.Run(len(bands), workers, func(i int) error {
+		bands[i].y0, bands[i].y1 = ys[i], ys[i+1]
+		return bands[i].encode(src, level, i == len(bands)-1)
+	}, func(i int) error {
+		bd := &bands[i]
 		if i == 0 {
 			cw.chunk2("IDAT", h[:], bd.data)
 		} else {
@@ -154,34 +143,15 @@ func (enc *Encoder) writeIDATs(cw *chunkWriter, src *source) error {
 		}
 		adler = adler32Combine(adler, bd.adler, bd.n)
 		bd.data = nil
+		return cw.err
+	})
+	if err != nil {
+		return err
 	}
 	var sum [4]byte
 	binary.BigEndian.PutUint32(sum[:], adler)
 	cw.chunk("IDAT", sum[:])
 	return cw.err
-}
-
-// Band sizes: a band is at least minBandBytes of raw rows, so that its
-// setup (a compressor, a dictionary) stays small against its work; there
-// are up to bandsPerWorker bands per worker, so that a worker done early
-// takes another band while a dense one is still encoding.
-const (
-	minBandBytes   = 512 << 10
-	bandsPerWorker = 2
-)
-
-func planBands(h, rowBytes, workers int) []*band {
-	n := 1
-	if workers > 1 {
-		rows := max(16, (minBandBytes+rowBytes-1)/rowBytes)
-		n = min(workers*bandsPerWorker, (h+rows-1)/rows)
-		n = max(n, 1)
-	}
-	bands := make([]*band, n)
-	for i := range n {
-		bands[i] = &band{y0: i * h / n, y1: (i + 1) * h / n}
-	}
-	return bands
 }
 
 // dictSize is deflate's window: a band's compressor is primed with that
@@ -192,7 +162,7 @@ const dictSize = 32 << 10
 // encode filters and deflates the band's rows. The previous band's last
 // filtered bytes, needed as the dictionary, are filtered again here from
 // the image, so that bands need nothing from each other.
-func (bd *band) encode(src *source, level CompressionLevel, last bool) {
+func (bd *pngBand) encode(src *source, level CompressionLevel, last bool) error {
 	f := newFilterer(src, level)
 	if bd.y0 > 0 && level != NoCompression {
 		stride := src.rowBytes() + 1
@@ -213,22 +183,21 @@ func (bd *band) encode(src *source, level CompressionLevel, last bool) {
 		zw, err = flate.NewWriter(out, level.flate())
 	}
 	if err != nil {
-		bd.err = err
-		return
+		return err
 	}
 	if _, err := zw.Write(filtered); err != nil {
-		bd.err = err
-		return
+		return err
 	}
 	if last {
-		bd.err = zw.Close()
+		err = zw.Close()
 	} else {
 		// A sync flush ends the band on a byte boundary without ending the
 		// stream; the next band's data continues it.
-		bd.err = zw.Flush()
+		err = zw.Flush()
 	}
 	f.release(filtered)
 	bd.data = out.b
+	return err
 }
 
 type sliceWriter struct{ b []byte }
@@ -259,7 +228,7 @@ func (c *chunkWriter) chunk2(typ string, a, b []byte) {
 	}
 	n := len(a) + len(b)
 	if n > 1<<31-1 {
-		c.err = errors.New("calamus: chunk too large")
+		c.err = errors.New("png: chunk too large")
 		return
 	}
 	var hdr [8]byte

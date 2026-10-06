@@ -1,4 +1,4 @@
-package calamus
+package png
 
 import (
 	"bytes"
@@ -9,7 +9,7 @@ import (
 	"hash/crc32"
 	"image"
 	"image/color"
-	"image/png"
+	stdpng "image/png"
 	"io"
 	"math/rand/v2"
 	"testing"
@@ -64,7 +64,7 @@ func inflate(t testing.TB, idat []byte) []byte {
 func same(t testing.TB, m image.Image, enc Encoder) {
 	t.Helper()
 	var want bytes.Buffer
-	if err := (&png.Encoder{CompressionLevel: png.CompressionLevel(enc.CompressionLevel)}).Encode(&want, m); err != nil {
+	if err := (&stdpng.Encoder{CompressionLevel: stdpng.CompressionLevel(enc.CompressionLevel)}).Encode(&want, m); err != nil {
 		t.Fatal(err)
 	}
 	var got bytes.Buffer
@@ -81,11 +81,11 @@ func same(t testing.TB, m image.Image, enc Encoder) {
 	if !bytes.Equal(inflate(t, gi), inflate(t, wi)) {
 		t.Fatal("filtered scanlines differ from image/png's")
 	}
-	dm, err := png.Decode(bytes.NewReader(got.Bytes()))
+	dm, err := stdpng.Decode(bytes.NewReader(got.Bytes()))
 	if err != nil {
 		t.Fatal(err)
 	}
-	wm, _ := png.Decode(bytes.NewReader(want.Bytes()))
+	wm, _ := stdpng.Decode(bytes.NewReader(want.Bytes()))
 	b := wm.Bounds()
 	for y := b.Min.Y; y < b.Max.Y; y++ {
 		for x := b.Min.X; x < b.Max.X; x++ {
@@ -177,21 +177,14 @@ func TestSameAsImagePNG(t *testing.T) {
 	}
 }
 
-func TestBandsSplitLargeImages(t *testing.T) {
-	bands := planBands(1500, 640*3, 16)
-	if len(bands) < 2 {
-		t.Fatalf("%d bands", len(bands))
+func TestLargeImagesHaveSeveralBands(t *testing.T) {
+	m := image.NewRGBA(image.Rect(0, 0, 640, 1500))
+	var buf bytes.Buffer
+	if err := (&Encoder{Workers: 16}).Encode(&buf, m); err != nil {
+		t.Fatal(err)
 	}
-	if bands[0].y0 != 0 || bands[len(bands)-1].y1 != 1500 {
-		t.Fatal("bands do not cover the image")
-	}
-	for i := 1; i < len(bands); i++ {
-		if bands[i].y0 != bands[i-1].y1 || bands[i].y0 >= bands[i].y1 {
-			t.Fatalf("band %d: %d..%d after %d", i, bands[i].y0, bands[i].y1, bands[i-1].y1)
-		}
-	}
-	if n := len(planBands(1500, 640*3, 1)); n != 1 {
-		t.Fatalf("one worker: %d bands", n)
+	if n := bytes.Count(buf.Bytes(), []byte("IDAT")); n < 3 {
+		t.Fatalf("%d IDAT chunks", n)
 	}
 }
 

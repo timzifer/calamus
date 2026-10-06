@@ -1,4 +1,4 @@
-package calamus
+package png
 
 import (
 	"encoding/binary"
