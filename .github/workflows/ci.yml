@@ -47,3 +47,4 @@ jobs:
       - run: go test -run XXX -fuzz FuzzLZW -fuzztime 30s ./tiff
       - run: go test -run XXX -fuzz FuzzRoundTrip -fuzztime 30s ./tiff
       - run: go test -run XXX -fuzz FuzzDecodeAlike -fuzztime 30s ./gif
+      - run: go test -run XXX -fuzz FuzzLossless -fuzztime 30s ./webp

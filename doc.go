@@ -6,7 +6,7 @@
 //   - calamus/jpeg: baseline JPEG, a drop-in for image/jpeg (bands between restart markers)
 //   - calamus/tiff: TIFF, a drop-in for golang.org/x/image/tiff's encoder (strips), with LZW and the predictor
 //   - calamus/gif: GIF and animated GIF, a drop-in for image/gif (frames, LZW bands, dithering as a wavefront)
-//   - calamus/webp: lossless WebP, planned
+//   - calamus/webp: lossless WebP, still and animated (transforms per pixel, LZ77 per band, spliced bit streams)
 //
 // This package itself holds no code.
 package calamus

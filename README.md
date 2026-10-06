@@ -10,7 +10,7 @@ that any decoder reads. No cgo, every GOOS/GOARCH including `js/wasm`.
 | `calamus/jpeg` | baseline JPEG | bands of MCU rows between restart markers | ready |
 | `calamus/tiff` | TIFF | strips, compressed independently by design | ready |
 | `calamus/gif` | GIF, animated GIF | frames concurrently; LZW bands spliced bit by bit; Floyd-Steinberg as a wavefront | ready |
-| `calamus/webp` | lossless WebP | see below | planned |
+| `calamus/webp` | lossless WebP, animated WebP | transforms per pixel, LZ77 per band, one set of codes, bit streams spliced; frames concurrently | ready |
 
 ## PNG
 
@@ -177,6 +177,44 @@ Tests check the bytes against `image/gif` with one worker, the decoded
 frames with many, and the dithering against `image/draw` bit for bit;
 Pillow read banded files alike; a fuzz test compares one and many workers.
 
+## WebP
+
+Lossless WebP (VP8L), still and animated. Go's standard library has no
+WebP encoder; this one is written from the format (RFC 9649), and its
+output is checked with golang.org/x/image/webp and libwebp. One frame is
+encoded in bands too:
+
+- the transforms (subtract green, predictor with the best of 14 modes per
+  16×16 tile) work per pixel;
+- LZ77 matching runs per band and may reach back into earlier bands,
+  whose pixels the decoder has;
+- the colour cache's state at each band's start comes from one quick
+  serial pass, as it depends on the pixels alone;
+- the bands' symbol counts give one set of prefix codes, and each band's
+  symbols are coded on their own; the bit streams are spliced, as VP8L
+  knows no byte alignment.
+
+An animation's frames are encoded concurrently (each an `ANMF` chunk).
+
+```go
+import "github.com/timzifer/calamus/webp"
+
+err := webp.Encode(w, img)
+err = webp.EncodeAll(w, &webp.Animation{Frames: []webp.Frame{{Image: f0, Duration: 50 * time.Millisecond}}})
+```
+
+A4 at 150 dpi, against [nativewebp](https://github.com/HugoSmits86/nativewebp)
+(lossless WebP in pure Go) and `image/png`, 16 hardware threads:
+
+| | vs nativewebp, 1 worker | vs nativewebp, 16 workers | size vs nativewebp | size vs `image/png` |
+|---|---|---|---|---|
+| synthetic photo | 1.6× faster | 7.1× faster | −8 % | −32 % |
+| synthetic page | 2.3× faster | 15.4× faster | same | −52 % |
+
+libwebp (1.6, its default effort) still writes 12–29 % smaller files: it
+also uses a colour transform, region-wise prefix codes and a costlier
+LZ77 search. Those are the next steps.
+
 ## Other formats
 
 The same trick works wherever a format lets a stream be cut into pieces
@@ -196,9 +234,10 @@ that are coded independently and then concatenated:
 - **GIF**: yes (done, see above). LZW cannot be primed, but bands can be
   cut with Clear codes; the palette is global, and error diffusion carries
   from row to row, which a wavefront keeps exact.
-- **WebP**: hard. Lossless WebP uses whole-image transforms, a colour cache
-  and an entropy image; lossy WebP predicts across macroblocks and allows
-  at most eight token partitions.
+- **WebP**: lossless, yes (done, see above): the transforms are per pixel,
+  the colour cache's state at a band's start is cheap to know, and the bit
+  stream has no alignment to keep. Lossy WebP (VP8) predicts across
+  macroblocks and allows at most eight token partitions; it is not here.
 
 ## Credits
 
