@@ -9,7 +9,7 @@ that any decoder reads. No cgo, every GOOS/GOARCH including `js/wasm`.
 | `calamus/png` | PNG | bands of one zlib stream, each primed with its neighbour's last 32 KiB | ready |
 | `calamus/jpeg` | baseline JPEG | bands of MCU rows between restart markers | ready |
 | `calamus/tiff` | TIFF | strips, compressed independently by design | ready |
-| `calamus/gif` | GIF | LZW bands, each starting with a clear code | planned |
+| `calamus/gif` | GIF, animated GIF | frames concurrently; LZW bands spliced bit by bit; Floyd-Steinberg as a wavefront | ready |
 | `calamus/webp` | lossless WebP | see below | planned |
 
 ## PNG
@@ -122,6 +122,42 @@ with x/image/tiff and compare the pixels; libtiff (through Pillow) read
 all 30 combinations of a sample with several strips alike; the LZW coder
 (MSB first, with TIFF's early change) has a round-trip fuzz test.
 
+## GIF
+
+A drop-in for `image/gif` (`Encode`, `EncodeAll`, the same `GIF` type).
+Three things run concurrently:
+
+- **frames** of an animation, each an LZW stream of its own;
+- **bands** of a large frame: each band ends with a Clear code written at
+  the width the decoder has reached, so the next band starts afresh, and
+  the bands' bit streams are spliced without padding (GIF knows no byte
+  alignment). With one band a frame's data is the very stream `image/gif`
+  writes, and with one worker the file is byte for byte `image/gif`'s;
+- **quantising** a true-colour image: Floyd-Steinberg dithering (the
+  default) runs as a wavefront, row y on pixel x as soon as row y−1 has
+  passed pixel x+1, with `image/draw`'s result to the bit; `draw.Src` in
+  bands.
+
+```go
+import "github.com/timzifer/calamus/gif"
+
+err := gif.EncodeAll(w, anim)  // like image/gif's EncodeAll
+err = gif.Encode(w, photo, nil) // quantised to Plan 9 with Floyd-Steinberg, on all cores
+```
+
+Against `image/gif`, 16 hardware threads:
+
+| | 16 workers | size |
+|---|---|---|
+| animation, 30 frames of 640×480 | 6.0× faster | same |
+| one frame of 2400×1800 | 3.1× faster | +0.02 % |
+| A4 photo at 150 dpi, Floyd-Steinberg (default) | 6.5× faster | same |
+| A4 photo at 150 dpi, `draw.Src` | 6.4× faster | same |
+
+Tests check the bytes against `image/gif` with one worker, the decoded
+frames with many, and the dithering against `image/draw` bit for bit;
+Pillow read banded files alike; a fuzz test compares one and many workers.
+
 ## Other formats
 
 The same trick works wherever a format lets a stream be cut into pieces
@@ -138,9 +174,9 @@ that are coded independently and then concatenated:
   first parallel pass to count symbols. Progressive JPEG is more involved.
 - **TIFF**: trivially; strips and tiles are compressed independently by
   design (done, see above).
-- **GIF**: partly. LZW cannot be primed, but each band can start with a
-  clear code (as [gip](https://github.com/tenox7/gip) does). The palette is
-  global: quantisation must come first, over the whole image.
+- **GIF**: yes (done, see above). LZW cannot be primed, but bands can be
+  cut with Clear codes; the palette is global, and error diffusion carries
+  from row to row, which a wavefront keeps exact.
 - **WebP**: hard. Lossless WebP uses whole-image transforms, a colour cache
   and an entropy image; lossy WebP predicts across macroblocks and allows
   at most eight token partitions.
