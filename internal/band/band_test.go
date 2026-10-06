@@ -2,6 +2,7 @@ package band
 
 import (
 	"errors"
+	"runtime"
 	"sync/atomic"
 	"testing"
 )
@@ -74,6 +75,118 @@ func TestRunStopsAtFirstError(t *testing.T) {
 		return nil
 	})
 	if !errors.Is(err, boom) || len(emitted) != 4 {
+		t.Fatalf("err %v, emitted %v", err, emitted)
+	}
+}
+
+func TestRunBoundsPrefetch(t *testing.T) {
+	const n, workers = 100, 4
+	release := make(chan struct{})
+	var encoded, peakAhead atomic.Int32
+	var emitted atomic.Int32
+	go func() {
+		// Let the other workers run as far as they may, then free band 0.
+		for range 1000 {
+			runtime.Gosched()
+		}
+		close(release)
+	}()
+	err := Run(n, workers, func(i int) error {
+		if i == 0 {
+			<-release
+		}
+		encoded.Add(1)
+		if a := int32(i) - emitted.Load(); a > peakAhead.Load() {
+			peakAhead.Store(a)
+		}
+		return nil
+	}, func(i int) error {
+		if i == 0 {
+			if e := encoded.Load(); e > prefetch*workers {
+				t.Errorf("%d bands encoded while the first was blocked", e)
+			}
+		}
+		emitted.Add(1)
+		return nil
+	})
+	if err != nil || emitted.Load() != n {
+		t.Fatalf("err %v, %d emitted", err, emitted.Load())
+	}
+	if peakAhead.Load() >= prefetch*workers {
+		t.Fatalf("band encoded %d ahead of the emitted ones", peakAhead.Load())
+	}
+}
+
+func TestRunStopsAfterEmitError(t *testing.T) {
+	boom := errors.New("boom")
+	for _, failAt := range []int{0, 7} {
+		var encoded, running atomic.Int32
+		err := Run(100, 4, func(i int) error {
+			running.Add(1)
+			defer running.Add(-1)
+			encoded.Add(1)
+			return nil
+		}, func(i int) error {
+			if i == failAt {
+				return boom
+			}
+			return nil
+		})
+		if !errors.Is(err, boom) {
+			t.Fatalf("err %v", err)
+		}
+		if e := encoded.Load(); e > int32(failAt+prefetch*4) {
+			t.Fatalf("emit failed at %d, %d bands encoded", failAt, e)
+		}
+		if running.Load() != 0 {
+			t.Fatal("Run returned while encodes still ran")
+		}
+	}
+}
+
+func TestRunStopsAfterEncodeError(t *testing.T) {
+	boom := errors.New("boom")
+	var encoded atomic.Int32
+	var emitted []int
+	err := Run(100, 4, func(i int) error {
+		encoded.Add(1)
+		if i == 5 {
+			return boom
+		}
+		return nil
+	}, func(i int) error {
+		emitted = append(emitted, i)
+		return nil
+	})
+	if !errors.Is(err, boom) || len(emitted) != 5 {
+		t.Fatalf("err %v, emitted %v", err, emitted)
+	}
+	if e := encoded.Load(); e > 5+prefetch*4 {
+		t.Fatalf("%d bands encoded", e)
+	}
+}
+
+// TestRunFirstErrorInOrder: a later band failing first does not hide an
+// earlier band's error, and the bands before it are still emitted.
+func TestRunFirstErrorInOrder(t *testing.T) {
+	early, late := errors.New("early"), errors.New("late")
+	lateDone := make(chan struct{})
+	var emitted []int
+	err := Run(8, 4, func(i int) error {
+		switch i {
+		case 2:
+			<-lateDone
+			return early
+		case 3:
+			defer close(lateDone)
+			return late
+		}
+		return nil
+	}, func(i int) error {
+		emitted = append(emitted, i)
+		return nil
+	})
+	if !errors.Is(err, early) || len(emitted) != 2 {
 		t.Fatalf("err %v, emitted %v", err, emitted)
 	}
 }
