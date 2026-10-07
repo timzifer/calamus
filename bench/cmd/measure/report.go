@@ -101,7 +101,7 @@ func newReport() *report {
 			fmt.Sprintf("Latency: each encode is timed on its own (QueryPerformanceCounter on Windows, whose Go clock is too coarse for small images); a run is a loop of at least %v per implementation; its ratio is the median encode time over the reference's.", minLoop),
 			"CPU: process user+system time over the whole loop or batch, per image, over the reference's. Windows counts it in scheduler ticks (~15.6 ms), hence the long loops.",
 			"Batch: a fixed number of independent copies of the image; configurations are workers×outer with workers×outer = budget; throughput is the reference's batch time over the configuration's.",
-			"Memory: one encode per fresh process (cold) or after three encodes (warm); heap in use (objects, including those not yet collected) sampled every 1 ms during the encode (a sampled peak, not an exact one), bytes allocated (runtime.MemStats), and the process's high-water mark, which includes the input and the Go runtime. Output goes to a writer that keeps nothing. Median of several processes.",
+			"Memory: one encode per fresh process (cold) or after three encodes and one collection, which keeps sync.Pools filled (warm); heap in use (objects, including those not yet collected) sampled every 1 ms during the encode (a sampled peak, not an exact one), bytes allocated (runtime.MemStats), and the process's high-water mark, which includes the input and the Go runtime. Output goes to a writer that keeps nothing. Median of several processes.",
 			"Summary: the median of the per-run ratios, with their range; a range across 1.00 is marked ~ (inconclusive).",
 			"Only ratios are reported: times say more about the machine and its load than about the encoders.",
 		},

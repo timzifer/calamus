@@ -49,22 +49,24 @@ check the sequence numbers; Pillow read the animation.
 Measured on one machine (Ryzen 7 5800H, 8 cores, 16 threads, Windows)
 over the [benchmark corpus](bench/README.md): ratios to `image/png` at the
 same level (`BestSpeed`), time per image, lower is faster. The
-[report](bench/reports/2026-10-06-amd-ryzen-7-5800h-with-radeon-graphics-windows.md) has every case, the method and the
+[report](bench/reports/2026-10-07-amd-ryzen-7-5800h-with-radeon-graphics-windows.md) has every case, the method and the
 raw ratios; it holds for that machine and corpus.
 
 | images | 1 worker | 16 workers | size |
 |---|---|---|---|
-| real: photos, test graphics, document pages, diagrams (500² and larger) | 0.85–0.93 | 0.14–0.48; a 500² photo 0.93 (one band) | ±0.1 % |
-| synthetic: text-like page, noise (A4 at 150 dpi) | 0.88–0.94 | 0.12–0.17 | ±0.1 % |
-| a 64² photo | 0.93 | 1.02 (one band) | +0.1 % |
+| real: photos, test graphics, document pages, diagrams (500² and larger) | 0.83–0.94 | 0.15–0.48; a 500² photo 0.92 (one band) | ±0.1 % |
+| synthetic: text-like page, noise (A4 at 150 dpi) | 0.86–0.94 | 0.13–0.17 | ±0.1 % |
+| a 64² photo | 0.58 | 0.61 (one band) | +0.1 % |
 
-What the workers cost: 16 workers spend 0.93–1.26× image/png's CPU time
+What the workers cost: 16 workers spend 0.85–1.36× image/png's CPU time
 on one image. For many images at once, one worker per image is the better
-use of the cores: 1.05–1.29× image/png's throughput at 16 goroutines
-(0.81× on 64² images), where 16 workers on one image at a time reach
-0.11–0.78×. And memory:
-calamus/png holds the filtered rows of a band at once, so its peak heap
-is 3–50× image/png's and its process high-water mark up to 2.4× (the
+use of the cores: 1.12–1.36× image/png's throughput at 16 goroutines,
+where 16 workers on one image at a time reach 0.12–0.83×. Memory: with
+one worker, rows stream into the compressor and the peak heap is
+1.2–1.25× image/png's, the process high-water mark at par. With 16
+workers, the bands waiting to be written and their compressors (each
+primed with its neighbour's bytes) take 2.6–41× image/png's heap and up
+to 1.9× its high-water mark on images of 800×500 and larger (the
 report's memory tables).
 
 ### How
@@ -112,12 +114,14 @@ err := jpeg.Encode(w, img, &jpeg.Options{Quality: 85}) // like image/jpeg's Enco
 err = (&jpeg.Encoder{Quality: 85, Workers: 0}).Encode(w, img)
 ```
 
-Against `image/jpeg` at quality 75 ([report](bench/reports/2026-10-06-amd-ryzen-7-5800h-with-radeon-graphics-windows.md), same machine
-and corpus as for PNG): with one worker as fast (0.97–1.01 of its time);
-with 16 workers 0.13–0.27 of its time on images of 500² and larger, at
-1.3–1.7× its CPU time and up to 115× its allocations; the restart markers
-add up to 0.1 % to the file. For a batch of images, one worker per image
-is as fast as image/jpeg on as many goroutines. Tests check that banded and unbanded
+Against `image/jpeg` at quality 75 ([report](bench/reports/2026-10-07-amd-ryzen-7-5800h-with-radeon-graphics-windows.md), same machine
+and corpus as for PNG): with one worker as fast (0.99–1.02 of its time);
+with 16 workers 0.12–0.24 of its time on images of 500² and larger, at
+1.2–1.6× its CPU time; the restart markers add up to 0.1 % to the file.
+image/jpeg allocates almost nothing; with 16 workers calamus allocates
+about the output's size on a first call and 1.6–7× image/jpeg's few
+kilobytes once its buffers are pooled. For a batch of images, one worker
+per image is as fast as image/jpeg on as many goroutines. Tests check that banded and unbanded
 files decode to the same pixels (`image/jpeg`, and libjpeg-turbo through
 Pillow for a sample), and a fuzz test does so for random images.
 

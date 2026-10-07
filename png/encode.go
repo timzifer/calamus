@@ -5,6 +5,7 @@ import (
 	"compress/flate"
 	"encoding/binary"
 	"errors"
+	"hash/adler32"
 	"hash/crc32"
 	"image"
 	"io"
@@ -137,9 +138,24 @@ func (enc *Encoder) writeIDATs(cw *chunkWriter, src *source) error {
 	level := enc.CompressionLevel
 	h := level.zlibHeader()
 	var adler uint32 = 1
+	if len(bands) == 1 {
+		// One band: straight to the output in IDAT chunks, as image/png
+		// writes, holding no more than a chunk.
+		iw := &idatWriter{cw: cw, buf: append(make([]byte, 0, idatSize), h[:]...)}
+		bd := &bands[0]
+		bd.y0, bd.y1 = 0, src.h
+		if err := bd.encode(src, level, true, iw); err != nil {
+			return err
+		}
+		iw.flush()
+		var sum [4]byte
+		binary.BigEndian.PutUint32(sum[:], bd.adler)
+		cw.chunk("IDAT", sum[:])
+		return cw.err
+	}
 	err := band.Run(len(bands), workers, func(i int) error {
 		bands[i].y0, bands[i].y1 = ys[i], ys[i+1]
-		return bands[i].encode(src, level, i == len(bands)-1)
+		return bands[i].encode(src, level, i == len(bands)-1, nil)
 	}, func(i int) error {
 		bd := &bands[i]
 		if i == 0 {
@@ -168,42 +184,140 @@ const dictSize = 32 << 10
 // encode filters and deflates the band's rows. The previous band's last
 // filtered bytes, needed as the dictionary, are filtered again here from
 // the image, so that bands need nothing from each other.
-func (bd *pngBand) encode(src *source, level CompressionLevel, last bool) error {
+//
+// The rows go to the compressor one at a time, so that a band holds its
+// compressed bytes only: into bd.data, or into out if it is not nil.
+func (bd *pngBand) encode(src *source, level CompressionLevel, last bool, out io.Writer) error {
 	f := newFilterer(src, level)
+	var dict []byte
 	if bd.y0 > 0 && level != NoCompression {
 		stride := src.rowBytes() + 1
 		d0 := max(0, bd.y0-((dictSize-1)/stride+1))
-		dict := f.rows(d0, bd.y0, make([]byte, 0, (bd.y0-d0)*stride))
-		f.dict = dict[max(0, len(dict)-dictSize):]
+		dict = f.rows(d0, bd.y0, make([]byte, 0, (bd.y0-d0)*stride))
+		dict = dict[max(0, len(dict)-dictSize):]
 	}
-	filtered := f.rows(bd.y0, bd.y1, f.buf((bd.y1-bd.y0)*(src.rowBytes()+1)))
-	bd.n = len(filtered)
-	bd.adler = adler32Sum(filtered)
-
-	out := &sliceWriter{b: make([]byte, 0, len(filtered)/4+64)}
-	var zw *flate.Writer
-	var err error
-	if f.dict != nil {
-		zw, err = flate.NewWriterDict(out, level.flate(), f.dict)
-	} else {
-		zw, err = flate.NewWriter(out, level.flate())
+	var sw *sliceWriter
+	if out == nil {
+		// The band waits here until the bands before it are written; a
+		// quarter of its raw rows is a first guess at its compressed size.
+		sw = &sliceWriter{b: make([]byte, 0, (bd.y1-bd.y0)*(src.rowBytes()+1)/4+64)}
+		out = sw
 	}
+	zw, err := getCompressor(out, level, dict)
 	if err != nil {
 		return err
 	}
-	if _, err := zw.Write(filtered); err != nil {
+	// Rows are gathered into chunks of about rowChunk bytes, so that the
+	// compressor and the checksum see few large writes, not two per row.
+	a := adler32.New()
+	n := 0
+	buf := getRowChunk()
+	write := func() error {
+		a.Write(buf)
+		n += len(buf)
+		_, err := zw.Write(buf)
+		buf = buf[:0]
 		return err
 	}
-	if last {
-		err = zw.Close()
-	} else {
-		// A sync flush ends the band on a byte boundary without ending the
-		// stream; the next band's data continues it.
-		err = zw.Flush()
+	err = f.each(bd.y0, bd.y1, func(ft byte, row []byte) error {
+		if len(buf) > 0 && len(buf)+1+len(row) > rowChunk {
+			if err := write(); err != nil {
+				return err
+			}
+		}
+		buf = append(append(buf, ft), row...)
+		return nil
+	})
+	if err == nil && len(buf) > 0 {
+		err = write()
 	}
-	f.release(filtered)
-	bd.data = out.b
+	rowChunks.Put(&buf)
+	if err == nil {
+		if last {
+			err = zw.Close()
+		} else {
+			// A sync flush ends the band on a byte boundary without ending
+			// the stream; the next band's data continues it.
+			err = zw.Flush()
+		}
+	}
+	putCompressor(zw, level, dict)
+	bd.n, bd.adler = n, a.Sum32()
+	if sw != nil {
+		bd.data = sw.b
+	}
 	return err
+}
+
+// rowChunk is how many filtered bytes a band gathers before it hands
+// them to the compressor.
+const rowChunk = 64 << 10
+
+// rowChunks keeps the gathering buffers between bands and calls.
+var rowChunks sync.Pool
+
+func getRowChunk() []byte {
+	if b, ok := rowChunks.Get().(*[]byte); ok {
+		return (*b)[:0]
+	}
+	return make([]byte, 0, rowChunk)
+}
+
+// Compressors without a dictionary are kept between bands and calls, one
+// pool per level: a compressor's state is about a megabyte. A primed one
+// is made anew, as Reset keeps the dictionary a compressor was made with.
+var compressors sync.Map // CompressionLevel to *sync.Pool
+
+func getCompressor(w io.Writer, level CompressionLevel, dict []byte) (*flate.Writer, error) {
+	if dict != nil {
+		return flate.NewWriterDict(w, level.flate(), dict)
+	}
+	if p, ok := compressors.Load(level); ok {
+		if zw, ok := p.(*sync.Pool).Get().(*flate.Writer); ok {
+			zw.Reset(w)
+			return zw, nil
+		}
+	}
+	return flate.NewWriter(w, level.flate())
+}
+
+func putCompressor(zw *flate.Writer, level CompressionLevel, dict []byte) {
+	if dict != nil {
+		return
+	}
+	zw.Reset(io.Discard) // drop the reference to the output
+	p, _ := compressors.LoadOrStore(level, new(sync.Pool))
+	p.(*sync.Pool).Put(zw)
+}
+
+// idatSize is the most an IDAT chunk holds when the stream is written as
+// it is compressed.
+const idatSize = 64 << 10
+
+// idatWriter cuts a zlib stream into IDAT chunks of up to idatSize bytes.
+type idatWriter struct {
+	cw  *chunkWriter
+	buf []byte
+}
+
+func (w *idatWriter) Write(p []byte) (int, error) {
+	n := len(p)
+	for len(p) > 0 && w.cw.err == nil {
+		k := min(len(p), idatSize-len(w.buf))
+		w.buf = append(w.buf, p[:k]...)
+		p = p[k:]
+		if len(w.buf) == idatSize {
+			w.flush()
+		}
+	}
+	return n, w.cw.err
+}
+
+func (w *idatWriter) flush() {
+	if len(w.buf) > 0 {
+		w.cw.chunk("IDAT", w.buf)
+		w.buf = w.buf[:0]
+	}
 }
 
 type sliceWriter struct{ b []byte }
@@ -251,6 +365,3 @@ func (c *chunkWriter) chunk2(typ string, a, b []byte) {
 		}
 	}
 }
-
-// bufPool keeps filtered-row buffers between bands and calls.
-var bufPool sync.Pool
