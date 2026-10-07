@@ -207,20 +207,31 @@ func (bd *pngBand) encode(src *source, level CompressionLevel, last bool, out io
 	if err != nil {
 		return err
 	}
+	// Rows are gathered into chunks of about rowChunk bytes, so that the
+	// compressor and the checksum see few large writes, not two per row.
 	a := adler32.New()
 	n := 0
-	var ftb [1]byte
-	err = f.each(bd.y0, bd.y1, func(ft byte, row []byte) error {
-		ftb[0] = ft
-		a.Write(ftb[:])
-		a.Write(row)
-		n += 1 + len(row)
-		if _, err := zw.Write(ftb[:]); err != nil {
-			return err
-		}
-		_, err := zw.Write(row)
+	buf := getRowChunk()
+	write := func() error {
+		a.Write(buf)
+		n += len(buf)
+		_, err := zw.Write(buf)
+		buf = buf[:0]
 		return err
+	}
+	err = f.each(bd.y0, bd.y1, func(ft byte, row []byte) error {
+		if len(buf) > 0 && len(buf)+1+len(row) > rowChunk {
+			if err := write(); err != nil {
+				return err
+			}
+		}
+		buf = append(append(buf, ft), row...)
+		return nil
 	})
+	if err == nil && len(buf) > 0 {
+		err = write()
+	}
+	rowChunks.Put(&buf)
 	if err == nil {
 		if last {
 			err = zw.Close()
@@ -236,6 +247,20 @@ func (bd *pngBand) encode(src *source, level CompressionLevel, last bool, out io
 		bd.data = sw.b
 	}
 	return err
+}
+
+// rowChunk is how many filtered bytes a band gathers before it hands
+// them to the compressor.
+const rowChunk = 64 << 10
+
+// rowChunks keeps the gathering buffers between bands and calls.
+var rowChunks sync.Pool
+
+func getRowChunk() []byte {
+	if b, ok := rowChunks.Get().(*[]byte); ok {
+		return (*b)[:0]
+	}
+	return make([]byte, 0, rowChunk)
 }
 
 // Compressors without a dictionary are kept between bands and calls, one
