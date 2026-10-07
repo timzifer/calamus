@@ -1,10 +1,6 @@
 package png
 
-import "hash/adler32"
-
 const adlerBase = 65521
-
-func adler32Sum(b []byte) uint32 { return adler32.Checksum(b) }
 
 // adler32Combine returns the Adler-32 of A followed by B, given the
 // Adler-32 of each and the length of B (zlib's adler32_combine).

@@ -21,7 +21,6 @@ type filterer struct {
 	noFilter  bool // palette images and no compression: filter None, as image/png does
 	cur, prev []byte
 	cand      [5][]byte
-	dict      []byte
 	zeros     []byte // an Up-filtered row equal to the previous one
 }
 
@@ -37,18 +36,9 @@ func newFilterer(src *source, level CompressionLevel) *filterer {
 	return f
 }
 
-// buf returns a buffer for n filtered bytes.
-func (f *filterer) buf(n int) []byte {
-	if b, ok := bufPool.Get().(*[]byte); ok && cap(*b) >= n {
-		return (*b)[:0]
-	}
-	return make([]byte, 0, n)
-}
-
-func (f *filterer) release(b []byte) { bufPool.Put(&b) }
-
-// rows appends the filtered scanlines of rows [y0, y1) to out.
-func (f *filterer) rows(y0, y1 int, out []byte) []byte {
+// each filters rows [y0, y1) one at a time and hands each to fn as its
+// filter type and filtered bytes, which are valid until fn returns.
+func (f *filterer) each(y0, y1 int, fn func(ft byte, row []byte) error) error {
 	if y0 > 0 {
 		f.src.row(y0-1, f.prev)
 	} else {
@@ -56,20 +46,30 @@ func (f *filterer) rows(y0, y1 int, out []byte) []byte {
 	}
 	for y := y0; y < y1; y++ {
 		f.src.row(y, f.cur)
+		var err error
 		switch {
 		case f.noFilter:
-			out = append(out, ftNone)
-			out = append(out, f.cur...)
+			err = fn(ftNone, f.cur)
 		case bytes.Equal(f.cur, f.prev):
-			out = append(out, ftUp)
-			out = append(out, f.zeros...)
+			err = fn(ftUp, f.zeros)
 		default:
 			ft := f.choose()
-			out = append(out, byte(ft))
-			out = append(out, f.cand[ft]...)
+			err = fn(byte(ft), f.cand[ft])
+		}
+		if err != nil {
+			return err
 		}
 		f.cur, f.prev = f.prev, f.cur
 	}
+	return nil
+}
+
+// rows appends the filtered scanlines of rows [y0, y1) to out.
+func (f *filterer) rows(y0, y1 int, out []byte) []byte {
+	f.each(y0, y1, func(ft byte, row []byte) error {
+		out = append(append(out, ft), row...)
+		return nil
+	})
 	return out
 }
 
