@@ -1,0 +1,3 @@
+[submodule "bench/testdata/libjxl"]
+	path = bench/testdata/libjxl
+	url = https://github.com/libjxl/testdata.git

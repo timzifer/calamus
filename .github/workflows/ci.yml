@@ -33,6 +33,32 @@ jobs:
         env:
           GOARCH: "386"
 
+  bench-corpus:
+    # The corpus loads, matches its checksums, and every encoder's output
+    # passes validation. One iteration each: CI runners are too noisy to
+    # measure on.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: bench/go.mod
+          cache-dependency-path: bench/go.sum
+      - uses: actions/cache@v4
+        with:
+          path: bench/testdata/pdf
+          key: corpus-pdf-${{ hashFiles('bench/corpus/documents.go') }}
+      - run: go vet ./...
+        working-directory: bench
+      - run: go run ./cmd/corpus fetch
+        working-directory: bench
+      - run: go run ./cmd/corpus list
+        working-directory: bench
+      - run: go test -run XXX -bench . -benchtime 1x
+        working-directory: bench
+
   build:
     runs-on: ubuntu-latest
     steps:
