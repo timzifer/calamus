@@ -280,8 +280,14 @@ func memory(j job, input any) (result, error) {
 			}
 		}
 	}
+	// Start from a collected heap. Warm, collect once only: a sync.Pool
+	// survives one collection in its victim cache and is emptied by a
+	// second, which FreeOSMemory would be, and a warm encode is one whose
+	// pools are filled.
 	runtime.GC()
-	debug.FreeOSMemory()
+	if !j.Warm {
+		debug.FreeOSMemory()
+	}
 	// Allocations from MemStats, which flushes the per-P caches that
 	// runtime/metrics counts lazily; the heap by sampling.
 	var ms runtime.MemStats
