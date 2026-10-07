@@ -8,11 +8,11 @@ package jpeg
 
 import (
 	"bufio"
-	"bytes"
 	"errors"
 	"image"
 	"image/color"
 	"io"
+	"sync"
 
 	"github.com/timzifer/calamus/internal/band"
 )
@@ -692,24 +692,34 @@ func (enc *Encoder) Encode(w io.Writer, m image.Image) error {
 		e.flush()
 		return e.err
 	}
-	scans := make([][]byte, n)
+	// Band 0 is written straight to the output, which nothing else
+	// writes to until it is done; the others wait in pooled buffers, sized
+	// at first from the band's pixels, until the bands before them are out.
+	scans := make([]*scanBuf, n)
 	err := band.Run(n, workers, func(i int) error {
-		be := encoder{quant: e.quant}
-		var buf bytes.Buffer
-		buf.Grow(64 << 10)
-		be.w = byteWriter{&buf}
-		be.writeScan(m, i*k*mcuH, min((i+1)*k*mcuH, mcuRows*mcuH))
-		scans[i] = buf.Bytes()
+		be := encoder{quant: e.quant, w: e.w}
+		y0, y1 := i*k*mcuH, min((i+1)*k*mcuH, mcuRows*mcuH)
+		if i > 0 {
+			scans[i] = getScanBuf((y1 - y0) * b.Dx() * nComponent / 16)
+			be.w = scans[i]
+		}
+		be.writeScan(m, y0, y1)
 		return be.err
 	}, func(i int) error {
 		if i > 0 {
 			e.buf[0], e.buf[1] = 0xff, rst0Marker+uint8((i-1)%8)
 			e.write(e.buf[:2])
+			e.write(scans[i].b)
+			scanBufs.Put(scans[i])
+			scans[i] = nil
 		}
-		e.write(scans[i])
-		scans[i] = nil
 		return e.err
 	})
+	for _, s := range scans {
+		if s != nil { // left by an error
+			scanBufs.Put(s)
+		}
+	}
 	if err != nil {
 		return err
 	}
@@ -720,10 +730,36 @@ func (enc *Encoder) Encode(w io.Writer, m image.Image) error {
 	return e.err
 }
 
-// byteWriter gives a bytes.Buffer the Flush the encoder's writer needs.
-type byteWriter struct{ *bytes.Buffer }
+// scanBuf holds a band's scan until it is written.
+type scanBuf struct{ b []byte }
 
-func (byteWriter) Flush() error { return nil }
+func (s *scanBuf) Write(p []byte) (int, error) {
+	s.b = append(s.b, p...)
+	return len(p), nil
+}
+
+func (s *scanBuf) WriteByte(c byte) error {
+	s.b = append(s.b, c)
+	return nil
+}
+
+func (*scanBuf) Flush() error { return nil }
+
+// scanBufs keeps band buffers between bands and calls.
+var scanBufs sync.Pool
+
+// getScanBuf returns an empty buffer for about n bytes.
+func getScanBuf(n int) *scanBuf {
+	s, _ := scanBufs.Get().(*scanBuf)
+	if s == nil {
+		s = &scanBuf{}
+	}
+	if cap(s.b) < n {
+		s.b = make([]byte, 0, max(n, 4<<10))
+	}
+	s.b = s.b[:0]
+	return s
+}
 
 // Markers (ITU T.81, B.1.1.3).
 const (
