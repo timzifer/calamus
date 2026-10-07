@@ -5,11 +5,14 @@ import (
 	"image"
 	"image/color"
 	stdpng "image/png"
+	"io"
 	"math"
 	"math/rand/v2"
 	"runtime"
 	"strconv"
 	"testing"
+
+	"github.com/timzifer/calamus/internal/benchcase"
 )
 
 // benchImages are three kinds of image at 150 dpi A4 size: a rendered
@@ -72,33 +75,29 @@ func benchImages() map[string]*image.RGBA {
 	return ms
 }
 
+// BenchmarkEncode measures one complete encode of an opaque RGBA image at
+// BestSpeed; the output must decode to the source's pixels.
 func BenchmarkEncode(b *testing.B) {
+	ms := benchImages()
 	for _, name := range []string{"page", "photo", "ui"} {
-		m := benchImages()[name]
-		var ref int
-		b.Run(name+"/image-png", func(b *testing.B) {
-			enc := stdpng.Encoder{CompressionLevel: stdpng.BestSpeed}
-			b.ReportAllocs()
-			for b.Loop() {
-				var buf bytes.Buffer
-				enc.Encode(&buf, m)
-				ref = buf.Len()
+		m := ms[name]
+		b.Run(name, func(b *testing.B) {
+			ref := benchcase.Encoder{Name: "image-png", Encode: func(w io.Writer) error {
+				return (&stdpng.Encoder{CompressionLevel: stdpng.BestSpeed}).Encode(w, m)
+			}}
+			var encs []benchcase.Encoder
+			for _, workers := range []int{1, runtime.GOMAXPROCS(0)} {
+				encs = append(encs, benchcase.Encoder{Name: "calamus-" + strconv.Itoa(workers), Encode: func(w io.Writer) error {
+					return (&Encoder{CompressionLevel: BestSpeed, Workers: workers}).Encode(w, m)
+				}})
 			}
-		})
-		for _, workers := range []int{1, runtime.GOMAXPROCS(0)} {
-			b.Run(name+"/calamus-"+strconv.Itoa(workers), func(b *testing.B) {
-				enc := Encoder{CompressionLevel: BestSpeed, Workers: workers}
-				b.ReportAllocs()
-				var n int
-				for b.Loop() {
-					var buf bytes.Buffer
-					enc.Encode(&buf, m)
-					n = buf.Len()
+			benchcase.Run(b, ref, encs, func(_, got []byte) error {
+				d, err := stdpng.Decode(bytes.NewReader(got))
+				if err != nil {
+					return err
 				}
-				if ref > 0 {
-					b.ReportMetric(float64(n)/float64(ref), "size/image-png")
-				}
+				return benchcase.SamePixels(m, d)
 			})
-		}
+		})
 	}
 }

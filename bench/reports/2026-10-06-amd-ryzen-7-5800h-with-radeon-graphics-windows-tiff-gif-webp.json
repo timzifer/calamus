@@ -1,0 +1,2503 @@
+{
+ "Meta": {
+  "Date": "2026-10-06",
+  "Commit": "a2795c34aadb11f1ba597e49a8a0bf212625788f (modified)",
+  "Command": "G:\\golang\\measure.exe -v -formats tiff,gif,webp -parts latency -budgets 1,16 -name tiff-gif-webp -out reports",
+  "Go": "go1.27.1",
+  "OS": "windows",
+  "Arch": "amd64",
+  "CPU": "AMD Ryzen 7 5800H with Radeon Graphics",
+  "LogicalCPUs": 16,
+  "PhysicalCores": 8,
+  "Budgets": [
+   1,
+   16
+  ],
+  "Affinity": "none: GOMAXPROCS only; other processes may share the CPUs",
+  "MemoryMetric": "peak working set (Windows)",
+  "GOGC": "default (100)",
+  "Corpus": "short",
+  "Runs": 5,
+  "Images": 16,
+  "Dependencies": {
+   "github.com/HugoSmits86/nativewebp": "v1.3.0",
+   "github.com/ajroetker/go-highway": "v0.0.12",
+   "github.com/andybalholm/brotli": "v1.2.6",
+   "github.com/go-images/jpeg": "v0.2.0",
+   "github.com/go-images/jpeg2000": "v0.13.2",
+   "github.com/go-opentype/fonts": "v0.10.0",
+   "github.com/go-opentype/opentype": "v0.13.0",
+   "github.com/gogpu/gg": "v0.52.5",
+   "github.com/gogpu/gpucontext": "v0.28.0",
+   "github.com/gogpu/gputypes": "v0.5.2",
+   "github.com/tannevaled/gobig2": "v0.2.0",
+   "github.com/timzifer/calamus": "replaced by ../",
+   "github.com/timzifer/cera": "v0.4.0",
+   "github.com/timzifer/figure": "v0.14.0",
+   "github.com/timzifer/figure/backend/gg": "v0.12.0",
+   "github.com/timzifer/stilus": "v0.8.0",
+   "golang.org/x/image": "v0.46.0",
+   "golang.org/x/sys": "v0.48.0",
+   "golang.org/x/text": "v0.42.0"
+  },
+  "Method": [
+   "Every job runs in a fresh process with GOMAXPROCS set to its budget; no CPU affinity is set.",
+   "Each implementation encodes once before timing (warm-up, output check); timings are of warmed, repeated encodes.",
+   "Within a run the implementations take turns in a rotating order, so the machine's load falls on all alike.",
+   "Latency: each encode is timed on its own (QueryPerformanceCounter on Windows, whose Go clock is too coarse for small images); a run is a loop of at least 200ms per implementation; its ratio is the median encode time over the reference's.",
+   "CPU: process user+system time over the whole loop or batch, per image, over the reference's. Windows counts it in scheduler ticks (~15.6 ms), hence the long loops.",
+   "Batch: a fixed number of independent copies of the image; configurations are workers×outer with workers×outer = budget; throughput is the reference's batch time over the configuration's.",
+   "Memory: one encode per fresh process (cold) or after three encodes (warm); heap in use (objects, including those not yet collected) sampled every 1 ms during the encode (a sampled peak, not an exact one), bytes allocated (runtime.MemStats), and the process's high-water mark, which includes the input and the Go runtime. Output goes to a writer that keeps nothing. Median of several processes.",
+   "Summary: the median of the per-run ratios, with their range; a range across 1.00 is marked ~ (inconclusive).",
+   "Only ratios are reported: times say more about the machine and its load than about the encoders."
+  ]
+ },
+ "Fixtures": [
+  {
+   "Name": "photo/small/keong-macan-64",
+   "Category": "photo",
+   "Size": "small",
+   "Kind": "real",
+   "FileSHA256": "00b23ff5b1444bb3572304a7d229f091033c669c96fa7627c865d040e69631fa",
+   "PixelSHA256": "4585b0751b8abcc3ea4cb04f6f1aaed142d22b1c2a24a777058a3416d1decd36"
+  },
+  {
+   "Name": "photo/medium/keong-macan-500",
+   "Category": "photo",
+   "Size": "medium",
+   "Kind": "real",
+   "FileSHA256": "eb9189de8004dd0e56c5ccd8312567ae325bcef42861e2bfc86b064f4c4861b6",
+   "PixelSHA256": "3b197a6e7a7e315349fd2475eb8987887b2c517bb03e9d6cf8d4b80f13a95317"
+  },
+  {
+   "Name": "photo/large/flower",
+   "Category": "photo",
+   "Size": "large",
+   "Kind": "real",
+   "FileSHA256": "77ea5436547c82c9be2f72308f13b64de3dc889d8c9f3708be3638e6e17cff41",
+   "PixelSHA256": "1060f0738d8b4e74367156012f58e7bc8a9bb7af81a8a185a4c6662ee6f8ee79"
+  },
+  {
+   "Name": "graphic/medium/p3-color-bars",
+   "Category": "graphic",
+   "Size": "medium",
+   "Kind": "real",
+   "FileSHA256": "55af57a76b2e6e5560facc7f80b9dcb63c0a08bf71b4658070d580d5529557e8",
+   "PixelSHA256": "7ee573104c3801dff7f4f7cd9ab1e7474f19dcbca2d9d08d3401d8719ca832a4"
+  },
+  {
+   "Name": "document/medium/attention-p3-150dpi",
+   "Category": "document",
+   "Size": "medium",
+   "Kind": "real",
+   "FileSHA256": "bdfaa68d8984f0dc02beaca527b76f207d99b666d31d1da728ee0728182df697",
+   "PixelSHA256": "5eed691b8a1f31f315e7be4df181aa45e7974587f9ea3bbff14e4ffd6a81206e"
+  },
+  {
+   "Name": "diagram/medium/lines-800x500",
+   "Category": "diagram",
+   "Size": "medium",
+   "Kind": "real",
+   "FileSHA256": "",
+   "PixelSHA256": "78c2f53444639a73582d7a731985f7de73651cbc9375b2dee88e836ab6ae05df"
+  },
+  {
+   "Name": "synthetic/medium/page-1240x1754",
+   "Category": "synthetic",
+   "Size": "medium",
+   "Kind": "synthetic",
+   "FileSHA256": "",
+   "PixelSHA256": "f0370477fdfb30157106af2f3c42d04aa40adf6b8efbb591b3985123b1723df8"
+  },
+  {
+   "Name": "synthetic/medium/noise-1240x1754",
+   "Category": "synthetic",
+   "Size": "medium",
+   "Kind": "synthetic",
+   "FileSHA256": "",
+   "PixelSHA256": "8ebd8fe2b32cd59002bb6f0c421b000844ebbd65cc20ff2ca71ca0f5ed1347c6"
+  }
+ ],
+ "Unavailable": null,
+ "Latency": [
+  {
+   "Format": "tiff",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.985251,
+    "Min": 0.806182,
+    "Max": 1.14959,
+    "Runs": [
+     0.882683,
+     1.14959,
+     0.806182,
+     1.11083,
+     0.985251
+    ]
+   },
+   "CPU": {
+    "Median": 1.1,
+    "Min": 1,
+    "Max": 1.11111,
+    "Runs": [
+     1.1,
+     1.11111,
+     1,
+     1.1,
+     1.11111
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1.00006
+  },
+  {
+   "Format": "tiff",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 1.02288,
+    "Min": 0.967794,
+    "Max": 1.23654,
+    "Runs": [
+     1.18044,
+     1.23654,
+     0.967794,
+     1.02288,
+     1.02278
+    ]
+   },
+   "CPU": {
+    "Median": 0.974359,
+    "Min": 0.666667,
+    "Max": 1.36842,
+    "Runs": [
+     0.974359,
+     1.36842,
+     0.923077,
+     1.125,
+     0.666667
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1.00006
+  },
+  {
+   "Format": "tiff",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 1.07354,
+    "Min": 0.979575,
+    "Max": 1.50322,
+    "Runs": [
+     1.07354,
+     1.11297,
+     1.50322,
+     0.979575,
+     1.03966
+    ]
+   },
+   "CPU": {
+    "Median": 0.846154,
+    "Min": 0.583333,
+    "Max": 1.33333,
+    "Runs": [
+     0.794872,
+     1.05263,
+     0.846154,
+     0.583333,
+     1.33333
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1.00006
+  },
+  {
+   "Format": "tiff",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 1.01824,
+    "Min": 1.00817,
+    "Max": 1.01981,
+    "Runs": [
+     1.01981,
+     1.01035,
+     1.01897,
+     1.00817,
+     1.01824
+    ]
+   },
+   "CPU": {
+    "Median": 1.08333,
+    "Min": 0.923077,
+    "Max": 1.09091,
+    "Runs": [
+     1.08333,
+     1.09091,
+     1.08333,
+     1,
+     0.923077
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "tiff",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 1.01543,
+    "Min": 1.00035,
+    "Max": 1.09488,
+    "Runs": [
+     1.00035,
+     1.00646,
+     1.01543,
+     1.09488,
+     1.08718
+    ]
+   },
+   "CPU": {
+    "Median": 1.04545,
+    "Min": 0.923077,
+    "Max": 1.16667,
+    "Runs": [
+     1.08696,
+     1.04545,
+     0.923077,
+     1.16667,
+     1.03448
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "tiff",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 0.50261,
+    "Min": 0.471388,
+    "Max": 0.617325,
+    "Runs": [
+     0.50028,
+     0.50261,
+     0.514261,
+     0.617325,
+     0.471388
+    ]
+   },
+   "CPU": {
+    "Median": 1.18182,
+    "Min": 0.961538,
+    "Max": 1.58333,
+    "Runs": [
+     1.08696,
+     1.18182,
+     0.961538,
+     1.58333,
+     1.24138
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1.00265
+  },
+  {
+   "Format": "tiff",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 1.01072,
+    "Min": 0.959461,
+    "Max": 1.05375,
+    "Runs": [
+     0.983692,
+     0.959461,
+     1.01152,
+     1.01072,
+     1.05375
+    ]
+   },
+   "CPU": {
+    "Median": 1,
+    "Min": 0.933333,
+    "Max": 1.07143,
+    "Runs": [
+     0.933333,
+     0.9375,
+     1.07143,
+     1,
+     1
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "tiff",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.99525,
+    "Min": 0.948837,
+    "Max": 1.00284,
+    "Runs": [
+     1.00179,
+     0.981938,
+     0.948837,
+     0.99525,
+     1.00284
+    ]
+   },
+   "CPU": {
+    "Median": 0.966292,
+    "Min": 0.848485,
+    "Max": 0.988372,
+    "Runs": [
+     0.986842,
+     0.988372,
+     0.848485,
+     0.965909,
+     0.966292
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "tiff",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 0.142079,
+    "Min": 0.138284,
+    "Max": 0.153816,
+    "Runs": [
+     0.153816,
+     0.138662,
+     0.143268,
+     0.142079,
+     0.138284
+    ]
+   },
+   "CPU": {
+    "Median": 1.38202,
+    "Min": 1.23232,
+    "Max": 1.81579,
+    "Runs": [
+     1.81579,
+     1.39535,
+     1.23232,
+     1.28409,
+     1.38202
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1.00477
+  },
+  {
+   "Format": "tiff",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 1.01121,
+    "Min": 0.980391,
+    "Max": 1.0219,
+    "Runs": [
+     0.980391,
+     1.01182,
+     1.01121,
+     1.00633,
+     1.0219
+    ]
+   },
+   "CPU": {
+    "Median": 1,
+    "Min": 0.928571,
+    "Max": 1.07692,
+    "Runs": [
+     1,
+     1.07692,
+     1.07692,
+     0.928571,
+     0.928571
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "tiff",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 1.02607,
+    "Min": 0.881621,
+    "Max": 1.06988,
+    "Runs": [
+     1.02607,
+     0.881621,
+     1.03538,
+     0.980436,
+     1.06988
+    ]
+   },
+   "CPU": {
+    "Median": 0.940299,
+    "Min": 0.898734,
+    "Max": 1.10145,
+    "Runs": [
+     0.940299,
+     0.929577,
+     1.02817,
+     0.898734,
+     1.10145
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "tiff",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 0.198706,
+    "Min": 0.193789,
+    "Max": 0.214244,
+    "Runs": [
+     0.214244,
+     0.193789,
+     0.206457,
+     0.198706,
+     0.195603
+    ]
+   },
+   "CPU": {
+    "Median": 1.5443,
+    "Min": 1.52113,
+    "Max": 1.67164,
+    "Runs": [
+     1.67164,
+     1.53521,
+     1.52113,
+     1.5443,
+     1.5942
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1.00508
+  },
+  {
+   "Format": "tiff",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 1.10478,
+    "Min": 1.08146,
+    "Max": 1.11839,
+    "Runs": [
+     1.08146,
+     1.10918,
+     1.11839,
+     1.09694,
+     1.10478
+    ]
+   },
+   "CPU": {
+    "Median": 1.07143,
+    "Min": 1.07143,
+    "Max": 1.15385,
+    "Runs": [
+     1.07143,
+     1.07143,
+     1.07143,
+     1.15385,
+     1.14286
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "tiff",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 1.08197,
+    "Min": 1.04994,
+    "Max": 1.1457,
+    "Runs": [
+     1.06751,
+     1.08197,
+     1.1457,
+     1.10994,
+     1.04994
+    ]
+   },
+   "CPU": {
+    "Median": 1.07692,
+    "Min": 1.02381,
+    "Max": 1.08889,
+    "Runs": [
+     1.02381,
+     1.07692,
+     1.08889,
+     1.08511,
+     1.0625
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "tiff",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 0.332074,
+    "Min": 0.287486,
+    "Max": 0.340618,
+    "Runs": [
+     0.332074,
+     0.333825,
+     0.312023,
+     0.340618,
+     0.287486
+    ]
+   },
+   "CPU": {
+    "Median": 2.69048,
+    "Min": 2.04255,
+    "Max": 3.51282,
+    "Runs": [
+     2.69048,
+     3.51282,
+     2.97778,
+     2.04255,
+     2.39583
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1.01607
+  },
+  {
+   "Format": "tiff",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 1.07619,
+    "Min": 1.05254,
+    "Max": 1.08385,
+    "Runs": [
+     1.06618,
+     1.07832,
+     1.07619,
+     1.05254,
+     1.08385
+    ]
+   },
+   "CPU": {
+    "Median": 1.07692,
+    "Min": 1,
+    "Max": 1.16667,
+    "Runs": [
+     1,
+     1.07692,
+     1,
+     1.16667,
+     1.07692
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1.00003
+  },
+  {
+   "Format": "tiff",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 1.07612,
+    "Min": 1.03013,
+    "Max": 1.23043,
+    "Runs": [
+     1.09935,
+     1.07612,
+     1.06992,
+     1.23043,
+     1.03013
+    ]
+   },
+   "CPU": {
+    "Median": 1.25,
+    "Min": 1.13043,
+    "Max": 1.52174,
+    "Runs": [
+     1.13043,
+     1.25,
+     1.52174,
+     1.52174,
+     1.16129
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1.00003
+  },
+  {
+   "Format": "tiff",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 0.507858,
+    "Min": 0.495248,
+    "Max": 0.556856,
+    "Runs": [
+     0.495248,
+     0.507858,
+     0.50661,
+     0.556856,
+     0.516711
+    ]
+   },
+   "CPU": {
+    "Median": 2.04348,
+    "Min": 1.78261,
+    "Max": 2.19355,
+    "Runs": [
+     1.78261,
+     2,
+     2.04348,
+     2.13043,
+     2.19355
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1.01065
+  },
+  {
+   "Format": "tiff",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 1.05069,
+    "Min": 1.02429,
+    "Max": 1.08257,
+    "Runs": [
+     1.06093,
+     1.02429,
+     1.08257,
+     1.05057,
+     1.05069
+    ]
+   },
+   "CPU": {
+    "Median": 1.07143,
+    "Min": 1,
+    "Max": 1.15385,
+    "Runs": [
+     1.15385,
+     1,
+     1.07143,
+     1,
+     1.07143
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "tiff",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 1.01518,
+    "Min": 0.918094,
+    "Max": 1.04484,
+    "Runs": [
+     1.04121,
+     0.918094,
+     1.04484,
+     1.01518,
+     0.947451
+    ]
+   },
+   "CPU": {
+    "Median": 1.01786,
+    "Min": 0.945455,
+    "Max": 1.05455,
+    "Runs": [
+     1.04082,
+     0.945455,
+     1.05455,
+     1.01786,
+     0.96875
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "tiff",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 0.25176,
+    "Min": 0.216625,
+    "Max": 0.284324,
+    "Runs": [
+     0.284324,
+     0.251128,
+     0.25176,
+     0.259127,
+     0.216625
+    ]
+   },
+   "CPU": {
+    "Median": 2.50909,
+    "Min": 1.92188,
+    "Max": 2.77551,
+    "Runs": [
+     2.77551,
+     2.50909,
+     2.38182,
+     2.66071,
+     1.92188
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1.00841
+  },
+  {
+   "Format": "tiff",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 1.34061,
+    "Min": 1.31175,
+    "Max": 1.37291,
+    "Runs": [
+     1.34061,
+     1.35237,
+     1.31175,
+     1.33798,
+     1.37291
+    ]
+   },
+   "CPU": {
+    "Median": 1.44444,
+    "Min": 1.22222,
+    "Max": 1.625,
+    "Runs": [
+     1.44444,
+     1.3,
+     1.625,
+     1.22222,
+     1.44444
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "tiff",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 1.31068,
+    "Min": 1.25611,
+    "Max": 1.41204,
+    "Runs": [
+     1.31068,
+     1.25611,
+     1.3093,
+     1.38291,
+     1.41204
+    ]
+   },
+   "CPU": {
+    "Median": 1.33333,
+    "Min": 1,
+    "Max": 3.11111,
+    "Runs": [
+     1,
+     1.33333,
+     1.2,
+     2.66667,
+     3.11111
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "tiff",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 1.48014,
+    "Min": 1.43498,
+    "Max": 1.50117,
+    "Runs": [
+     1.48211,
+     1.48014,
+     1.43498,
+     1.4423,
+     1.50117
+    ]
+   },
+   "CPU": {
+    "Median": 11.4444,
+    "Min": 8.84615,
+    "Max": 15.5556,
+    "Runs": [
+     8.84615,
+     11.4444,
+     10.2,
+     15.5556,
+     12.3333
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1.00008
+  },
+  {
+   "Format": "gif",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.987328,
+    "Min": 0.981181,
+    "Max": 1.04367,
+    "Runs": [
+     1.01417,
+     0.981181,
+     1.04367,
+     0.987328,
+     0.986817
+    ]
+   },
+   "CPU": {
+    "Median": 1.07692,
+    "Min": 0.928571,
+    "Max": 1.16667,
+    "Runs": [
+     1.07692,
+     0.928571,
+     1.16667,
+     1.07692,
+     1.07692
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "gif",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.986328,
+    "Min": 0.899307,
+    "Max": 0.998155,
+    "Runs": [
+     0.986328,
+     0.987818,
+     0.976483,
+     0.998155,
+     0.899307
+    ]
+   },
+   "CPU": {
+    "Median": 0.923077,
+    "Min": 0.8,
+    "Max": 1,
+    "Runs": [
+     0.923077,
+     1,
+     1,
+     0.857143,
+     0.8
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "gif",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 1.70234,
+    "Min": 1.57295,
+    "Max": 1.72591,
+    "Runs": [
+     1.72491,
+     1.70234,
+     1.70134,
+     1.72591,
+     1.57295
+    ]
+   },
+   "CPU": {
+    "Median": 16.1429,
+    "Min": 13.8,
+    "Max": 19.8333,
+    "Runs": [
+     14,
+     19.8333,
+     18.75,
+     16.1429,
+     13.8
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "gif",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 1.01479,
+    "Min": 0.9988,
+    "Max": 1.14708,
+    "Runs": [
+     1.00915,
+     0.9988,
+     1.01479,
+     1.05173,
+     1.14708
+    ]
+   },
+   "CPU": {
+    "Median": 1.05556,
+    "Min": 0.947368,
+    "Max": 1.16667,
+    "Runs": [
+     1,
+     1.05882,
+     0.947368,
+     1.05556,
+     1.16667
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "gif",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.96085,
+    "Min": 0.869214,
+    "Max": 1.03215,
+    "Runs": [
+     0.96085,
+     0.869214,
+     1.00839,
+     1.03215,
+     0.96077
+    ]
+   },
+   "CPU": {
+    "Median": 0.970588,
+    "Min": 0.875,
+    "Max": 1.04688,
+    "Runs": [
+     0.946429,
+     0.875,
+     1,
+     1.04688,
+     0.970588
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "gif",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 0.233101,
+    "Min": 0.225555,
+    "Max": 0.267747,
+    "Runs": [
+     0.267747,
+     0.236509,
+     0.232064,
+     0.233101,
+     0.225555
+    ]
+   },
+   "CPU": {
+    "Median": 2.875,
+    "Min": 2.52239,
+    "Max": 3.44643,
+    "Runs": [
+     3.44643,
+     2.875,
+     2.52239,
+     2.92188,
+     2.66176
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "gif",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 1.00051,
+    "Min": 0.970366,
+    "Max": 1.03661,
+    "Runs": [
+     0.988648,
+     0.970366,
+     1.00657,
+     1.00051,
+     1.03661
+    ]
+   },
+   "CPU": {
+    "Median": 0.993548,
+    "Min": 0.960784,
+    "Max": 1.02649,
+    "Runs": [
+     0.993548,
+     0.960784,
+     1,
+     0.986755,
+     1.02649
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "gif",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.98443,
+    "Min": 0.976094,
+    "Max": 1.01888,
+    "Runs": [
+     1.01888,
+     0.988666,
+     0.976094,
+     0.977069,
+     0.98443
+    ]
+   },
+   "CPU": {
+    "Median": 0.962963,
+    "Min": 0.95625,
+    "Max": 1,
+    "Runs": [
+     1,
+     0.95625,
+     0.962963,
+     0.961538,
+     0.987013
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "gif",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 0.118047,
+    "Min": 0.115835,
+    "Max": 0.12236,
+    "Runs": [
+     0.1216,
+     0.116528,
+     0.12236,
+     0.115835,
+     0.118047
+    ]
+   },
+   "CPU": {
+    "Median": 1.64375,
+    "Min": 1.60494,
+    "Max": 1.71429,
+    "Runs": [
+     1.64052,
+     1.64375,
+     1.60494,
+     1.69872,
+     1.71429
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1.00034
+  },
+  {
+   "Format": "gif",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.99123,
+    "Min": 0.960299,
+    "Max": 1.13363,
+    "Runs": [
+     0.960299,
+     0.99123,
+     1.13363,
+     1.05934,
+     0.987224
+    ]
+   },
+   "CPU": {
+    "Median": 1.02857,
+    "Min": 0.903226,
+    "Max": 1.15625,
+    "Runs": [
+     0.903226,
+     1.03448,
+     1.15625,
+     1.02857,
+     0.972222
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "gif",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 1.0058,
+    "Min": 0.993255,
+    "Max": 1.15857,
+    "Runs": [
+     1.15857,
+     1.0058,
+     1.00087,
+     0.993255,
+     1.01582
+    ]
+   },
+   "CPU": {
+    "Median": 1.00943,
+    "Min": 0.981481,
+    "Max": 1.12222,
+    "Runs": [
+     1.12222,
+     1.02913,
+     1,
+     1.00943,
+     0.981481
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "gif",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 0.134518,
+    "Min": 0.130837,
+    "Max": 0.151581,
+    "Runs": [
+     0.151581,
+     0.130837,
+     0.134518,
+     0.134399,
+     0.135319
+    ]
+   },
+   "CPU": {
+    "Median": 1.79612,
+    "Min": 1.61321,
+    "Max": 1.95556,
+    "Runs": [
+     1.95556,
+     1.79612,
+     1.66981,
+     1.61321,
+     1.89815
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "gif",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 1.04775,
+    "Min": 0.875766,
+    "Max": 1.14683,
+    "Runs": [
+     1.14683,
+     1.07153,
+     1.04775,
+     1.01848,
+     0.875766
+    ]
+   },
+   "CPU": {
+    "Median": 1.03371,
+    "Min": 0.891089,
+    "Max": 1.14458,
+    "Runs": [
+     1.14458,
+     1.07955,
+     1.03371,
+     1.02174,
+     0.891089
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "gif",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 1.02325,
+    "Min": 1.00154,
+    "Max": 1.055,
+    "Runs": [
+     1.055,
+     1.02183,
+     1.00154,
+     1.02325,
+     1.0463
+    ]
+   },
+   "CPU": {
+    "Median": 1.04348,
+    "Min": 0.994709,
+    "Max": 1.05376,
+    "Runs": [
+     1.05376,
+     1.02094,
+     0.994709,
+     1.04348,
+     1.04813
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "gif",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 0.124949,
+    "Min": 0.12,
+    "Max": 0.127925,
+    "Runs": [
+     0.124969,
+     0.12,
+     0.124088,
+     0.124949,
+     0.127925
+    ]
+   },
+   "CPU": {
+    "Median": 1.66848,
+    "Min": 1.52381,
+    "Max": 1.73262,
+    "Runs": [
+     1.6828,
+     1.62827,
+     1.52381,
+     1.66848,
+     1.73262
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1.00627
+  },
+  {
+   "Format": "gif",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.993627,
+    "Min": 0.981022,
+    "Max": 1.00883,
+    "Runs": [
+     0.981022,
+     1.00522,
+     1.00883,
+     0.993627,
+     0.990234
+    ]
+   },
+   "CPU": {
+    "Median": 1,
+    "Min": 0.933333,
+    "Max": 1,
+    "Runs": [
+     0.933333,
+     1,
+     1,
+     1,
+     0.933333
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "gif",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 1.00992,
+    "Min": 0.918324,
+    "Max": 1.04124,
+    "Runs": [
+     0.980929,
+     0.918324,
+     1.00992,
+     1.0326,
+     1.04124
+    ]
+   },
+   "CPU": {
+    "Median": 1.01408,
+    "Min": 0.976744,
+    "Max": 1.02381,
+    "Runs": [
+     1.01408,
+     0.976744,
+     1.02381,
+     1.01163,
+     1.02353
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "gif",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 0.167467,
+    "Min": 0.152561,
+    "Max": 0.18767,
+    "Runs": [
+     0.18767,
+     0.152561,
+     0.168519,
+     0.162945,
+     0.167467
+    ]
+   },
+   "CPU": {
+    "Median": 2.23529,
+    "Min": 2.17442,
+    "Max": 2.50704,
+    "Runs": [
+     2.50704,
+     2.17442,
+     2.22619,
+     2.31395,
+     2.23529
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "gif",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.994908,
+    "Min": 0.942008,
+    "Max": 1.00552,
+    "Runs": [
+     1.00552,
+     0.977949,
+     0.942008,
+     0.994908,
+     0.998764
+    ]
+   },
+   "CPU": {
+    "Median": 1,
+    "Min": 0.938776,
+    "Max": 1.01075,
+    "Runs": [
+     1.01064,
+     0.989583,
+     0.938776,
+     1,
+     1.01075
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "gif",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 1.01471,
+    "Min": 0.976193,
+    "Max": 1.04887,
+    "Runs": [
+     1.01471,
+     1.04887,
+     1.00484,
+     1.04567,
+     0.976193
+    ]
+   },
+   "CPU": {
+    "Median": 1.02747,
+    "Min": 0.984043,
+    "Max": 1.05405,
+    "Runs": [
+     1.02747,
+     1.05405,
+     1.00546,
+     1.02778,
+     0.984043
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "gif",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 0.123492,
+    "Min": 0.119428,
+    "Max": 0.125124,
+    "Runs": [
+     0.125063,
+     0.12157,
+     0.123492,
+     0.125124,
+     0.119428
+    ]
+   },
+   "CPU": {
+    "Median": 1.69681,
+    "Min": 1.67027,
+    "Max": 1.74176,
+    "Runs": [
+     1.74176,
+     1.67027,
+     1.70492,
+     1.69444,
+     1.69681
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1.0008
+  },
+  {
+   "Format": "gif",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.992286,
+    "Min": 0.989303,
+    "Max": 1.04394,
+    "Runs": [
+     0.992286,
+     0.989303,
+     1.04394,
+     1.01889,
+     0.991213
+    ]
+   },
+   "CPU": {
+    "Median": 1.0198,
+    "Min": 0.971698,
+    "Max": 1.08247,
+    "Runs": [
+     0.980769,
+     0.971698,
+     1.08247,
+     1.0198,
+     1.02
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "gif",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.979932,
+    "Min": 0.971993,
+    "Max": 1.00527,
+    "Runs": [
+     0.979932,
+     1.00527,
+     0.991117,
+     0.976146,
+     0.971993
+    ]
+   },
+   "CPU": {
+    "Median": 0.995192,
+    "Min": 0.970874,
+    "Max": 1.01951,
+    "Runs": [
+     0.995169,
+     1.01951,
+     0.995349,
+     0.970874,
+     0.995192
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1
+  },
+  {
+   "Format": "gif",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 0.120069,
+    "Min": 0.118974,
+    "Max": 0.142234,
+    "Runs": [
+     0.142234,
+     0.123724,
+     0.119107,
+     0.120069,
+     0.118974
+    ]
+   },
+   "CPU": {
+    "Median": 1.4878,
+    "Min": 1.47442,
+    "Max": 1.71014,
+    "Runs": [
+     1.71014,
+     1.4878,
+     1.47442,
+     1.54854,
+     1.48077
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.999982
+  },
+  {
+   "Format": "webp",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.439106,
+    "Min": 0.407433,
+    "Max": 0.465336,
+    "Runs": [
+     0.411271,
+     0.407433,
+     0.439106,
+     0.465336,
+     0.463726
+    ]
+   },
+   "CPU": {
+    "Median": 0.45,
+    "Min": 0.45,
+    "Max": 0.5,
+    "Runs": [
+     0.45,
+     0.5,
+     0.45,
+     0.45,
+     0.47619
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.968034
+  },
+  {
+   "Format": "webp",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.42599,
+    "Min": 0.402113,
+    "Max": 0.447557,
+    "Runs": [
+     0.42599,
+     0.447557,
+     0.418363,
+     0.402113,
+     0.432236
+    ]
+   },
+   "CPU": {
+    "Median": 0.333333,
+    "Min": 0.294118,
+    "Max": 0.52381,
+    "Runs": [
+     0.52381,
+     0.333333,
+     0.44,
+     0.294118,
+     0.321429
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.968034
+  },
+  {
+   "Format": "webp",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 0.348418,
+    "Min": 0.324556,
+    "Max": 0.359458,
+    "Runs": [
+     0.348418,
+     0.350401,
+     0.34534,
+     0.324556,
+     0.359458
+    ]
+   },
+   "CPU": {
+    "Median": 0.592593,
+    "Min": 0.285714,
+    "Max": 0.714286,
+    "Runs": [
+     0.714286,
+     0.592593,
+     0.68,
+     0.352941,
+     0.285714
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.968034
+  },
+  {
+   "Format": "webp",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.60516,
+    "Min": 0.587845,
+    "Max": 0.727243,
+    "Runs": [
+     0.58967,
+     0.606471,
+     0.60516,
+     0.587845,
+     0.727243
+    ]
+   },
+   "CPU": {
+    "Median": 0.6,
+    "Min": 0.56,
+    "Max": 0.75,
+    "Runs": [
+     0.583333,
+     0.6,
+     0.625,
+     0.56,
+     0.75
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.973143
+  },
+  {
+   "Format": "webp",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.561916,
+    "Min": 0.474582,
+    "Max": 0.592476,
+    "Runs": [
+     0.592476,
+     0.474582,
+     0.584467,
+     0.560698,
+     0.561916
+    ]
+   },
+   "CPU": {
+    "Median": 0.609195,
+    "Min": 0.483146,
+    "Max": 0.770115,
+    "Runs": [
+     0.608108,
+     0.483146,
+     0.627907,
+     0.770115,
+     0.609195
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.973143
+  },
+  {
+   "Format": "webp",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 0.194719,
+    "Min": 0.166138,
+    "Max": 0.204464,
+    "Runs": [
+     0.19682,
+     0.166138,
+     0.18502,
+     0.194719,
+     0.204464
+    ]
+   },
+   "CPU": {
+    "Median": 0.83908,
+    "Min": 0.786517,
+    "Max": 0.977011,
+    "Runs": [
+     0.945946,
+     0.786517,
+     0.825581,
+     0.83908,
+     0.977011
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.973143
+  },
+  {
+   "Format": "webp",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.513119,
+    "Min": 0.490128,
+    "Max": 0.529617,
+    "Runs": [
+     0.490128,
+     0.50088,
+     0.529617,
+     0.513119,
+     0.516439
+    ]
+   },
+   "CPU": {
+    "Median": 0.510949,
+    "Min": 0.496503,
+    "Max": 0.541353,
+    "Runs": [
+     0.496503,
+     0.503597,
+     0.514925,
+     0.510949,
+     0.541353
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.96883
+  },
+  {
+   "Format": "webp",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.498677,
+    "Min": 0.488692,
+    "Max": 0.550947,
+    "Runs": [
+     0.490616,
+     0.498677,
+     0.514258,
+     0.488692,
+     0.550947
+    ]
+   },
+   "CPU": {
+    "Median": 0.523179,
+    "Min": 0.48366,
+    "Max": 0.59854,
+    "Runs": [
+     0.490323,
+     0.533784,
+     0.523179,
+     0.48366,
+     0.59854
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.96883
+  },
+  {
+   "Format": "webp",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 0.0982766,
+    "Min": 0.0901371,
+    "Max": 0.102732,
+    "Runs": [
+     0.0901371,
+     0.0982766,
+     0.102732,
+     0.0921528,
+     0.101787
+    ]
+   },
+   "CPU": {
+    "Median": 0.925676,
+    "Min": 0.913907,
+    "Max": 1.05839,
+    "Runs": [
+     0.935484,
+     0.925676,
+     0.913907,
+     0.921569,
+     1.05839
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.968831
+  },
+  {
+   "Format": "webp",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.574741,
+    "Min": 0.566498,
+    "Max": 0.587942,
+    "Runs": [
+     0.566498,
+     0.580626,
+     0.574741,
+     0.587942,
+     0.573563
+    ]
+   },
+   "CPU": {
+    "Median": 0.6,
+    "Min": 0.565217,
+    "Max": 0.619048,
+    "Runs": [
+     0.565217,
+     0.565217,
+     0.619048,
+     0.608696,
+     0.6
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.916686
+  },
+  {
+   "Format": "webp",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.580212,
+    "Min": 0.566106,
+    "Max": 0.584853,
+    "Runs": [
+     0.580212,
+     0.578387,
+     0.566106,
+     0.582516,
+     0.584853
+    ]
+   },
+   "CPU": {
+    "Median": 0.581395,
+    "Min": 0.550725,
+    "Max": 0.628788,
+    "Runs": [
+     0.598291,
+     0.581395,
+     0.550725,
+     0.628788,
+     0.577778
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.916686
+  },
+  {
+   "Format": "webp",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 0.110355,
+    "Min": 0.103778,
+    "Max": 0.126897,
+    "Runs": [
+     0.126897,
+     0.115584,
+     0.103778,
+     0.110355,
+     0.107897
+    ]
+   },
+   "CPU": {
+    "Median": 0.792593,
+    "Min": 0.727273,
+    "Max": 1.20513,
+    "Runs": [
+     1.20513,
+     0.906977,
+     0.782609,
+     0.727273,
+     0.792593
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.916686
+  },
+  {
+   "Format": "webp",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.304328,
+    "Min": 0.268512,
+    "Max": 0.332349,
+    "Runs": [
+     0.304328,
+     0.268512,
+     0.296398,
+     0.332349,
+     0.319457
+    ]
+   },
+   "CPU": {
+    "Median": 0.295918,
+    "Min": 0.262626,
+    "Max": 0.333333,
+    "Runs": [
+     0.292683,
+     0.262626,
+     0.295918,
+     0.333333,
+     0.304348
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1.01069
+  },
+  {
+   "Format": "webp",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.312178,
+    "Min": 0.300035,
+    "Max": 0.368771,
+    "Runs": [
+     0.368771,
+     0.312178,
+     0.300035,
+     0.304027,
+     0.315198
+    ]
+   },
+   "CPU": {
+    "Median": 0.317992,
+    "Min": 0.305785,
+    "Max": 0.371981,
+    "Runs": [
+     0.371981,
+     0.326087,
+     0.316406,
+     0.305785,
+     0.317992
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1.01069
+  },
+  {
+   "Format": "webp",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 0.065525,
+    "Min": 0.0621423,
+    "Max": 0.0748028,
+    "Runs": [
+     0.0748028,
+     0.0660377,
+     0.0621423,
+     0.0641763,
+     0.065525
+    ]
+   },
+   "CPU": {
+    "Median": 0.481172,
+    "Min": 0.359504,
+    "Max": 0.652344,
+    "Runs": [
+     0.63285,
+     0.408696,
+     0.652344,
+     0.359504,
+     0.481172
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1.01113
+  },
+  {
+   "Format": "webp",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.257939,
+    "Min": 0.250825,
+    "Max": 0.288259,
+    "Runs": [
+     0.250825,
+     0.257939,
+     0.288259,
+     0.252648,
+     0.267399
+    ]
+   },
+   "CPU": {
+    "Median": 0.264151,
+    "Min": 0.262295,
+    "Max": 0.307692,
+    "Runs": [
+     0.264151,
+     0.264151,
+     0.307692,
+     0.262295,
+     0.262295
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.976299
+  },
+  {
+   "Format": "webp",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.247585,
+    "Min": 0.232158,
+    "Max": 0.2987,
+    "Runs": [
+     0.2987,
+     0.232158,
+     0.243459,
+     0.257779,
+     0.247585
+    ]
+   },
+   "CPU": {
+    "Median": 0.271967,
+    "Min": 0.259414,
+    "Max": 0.314894,
+    "Runs": [
+     0.314815,
+     0.260331,
+     0.259414,
+     0.314894,
+     0.271967
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.976299
+  },
+  {
+   "Format": "webp",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 0.0742232,
+    "Min": 0.0710161,
+    "Max": 0.0867555,
+    "Runs": [
+     0.0867555,
+     0.0710161,
+     0.0753419,
+     0.0736151,
+     0.0742232
+    ]
+   },
+   "CPU": {
+    "Median": 0.48954,
+    "Min": 0.32636,
+    "Max": 0.549587,
+    "Runs": [
+     0.509259,
+     0.549587,
+     0.32636,
+     0.476596,
+     0.48954
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.976619
+  },
+  {
+   "Format": "webp",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.374138,
+    "Min": 0.36788,
+    "Max": 0.398609,
+    "Runs": [
+     0.398609,
+     0.36788,
+     0.374138,
+     0.384207,
+     0.372353
+    ]
+   },
+   "CPU": {
+    "Median": 0.37931,
+    "Min": 0.37037,
+    "Max": 0.392157,
+    "Runs": [
+     0.392157,
+     0.37037,
+     0.37931,
+     0.383333,
+     0.372881
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.709071
+  },
+  {
+   "Format": "webp",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.394533,
+    "Min": 0.370876,
+    "Max": 0.403762,
+    "Runs": [
+     0.403762,
+     0.394533,
+     0.383942,
+     0.398247,
+     0.370876
+    ]
+   },
+   "CPU": {
+    "Median": 0.387755,
+    "Min": 0.375494,
+    "Max": 0.414747,
+    "Runs": [
+     0.414747,
+     0.408696,
+     0.375494,
+     0.387755,
+     0.375969
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.709071
+  },
+  {
+   "Format": "webp",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 0.0725514,
+    "Min": 0.0647295,
+    "Max": 0.0756885,
+    "Runs": [
+     0.0756885,
+     0.0731829,
+     0.0725514,
+     0.0682058,
+     0.0647295
+    ]
+   },
+   "CPU": {
+    "Median": 0.616327,
+    "Min": 0.591304,
+    "Max": 0.788018,
+    "Runs": [
+     0.788018,
+     0.591304,
+     0.6917,
+     0.616327,
+     0.600775
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.709206
+  },
+  {
+   "Format": "webp",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.619773,
+    "Min": 0.589393,
+    "Max": 0.694748,
+    "Runs": [
+     0.657782,
+     0.589393,
+     0.694748,
+     0.6141,
+     0.619773
+    ]
+   },
+   "CPU": {
+    "Median": 0.632911,
+    "Min": 0.6,
+    "Max": 0.69863,
+    "Runs": [
+     0.656716,
+     0.6,
+     0.69863,
+     0.632911,
+     0.626667
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.998437
+  },
+  {
+   "Format": "webp",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.640911,
+    "Min": 0.629208,
+    "Max": 0.651278,
+    "Runs": [
+     0.640911,
+     0.638861,
+     0.649873,
+     0.629208,
+     0.651278
+    ]
+   },
+   "CPU": {
+    "Median": 0.642857,
+    "Min": 0.639241,
+    "Max": 0.662162,
+    "Runs": [
+     0.662162,
+     0.642857,
+     0.639241,
+     0.640523,
+     0.647436
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.998437
+  },
+  {
+   "Format": "webp",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 0.14292,
+    "Min": 0.139047,
+    "Max": 0.148785,
+    "Runs": [
+     0.14433,
+     0.14292,
+     0.14066,
+     0.148785,
+     0.139047
+    ]
+   },
+   "CPU": {
+    "Median": 1.55556,
+    "Min": 1.39873,
+    "Max": 1.58108,
+    "Runs": [
+     1.58108,
+     1.56494,
+     1.39873,
+     1.55556,
+     1.44231
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.998437
+  }
+ ],
+ "Batch": null,
+ "Memory": null,
+ "Animations": null
+}
