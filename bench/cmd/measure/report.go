@@ -314,7 +314,7 @@ func (r *report) markdown(name string) string {
 				}
 				one, _ := row("calamus-1", m.Budgets[0])
 				split := yesNo(bands)
-				if fm != "png" && fm != "png-fast" && fm != "jpeg" {
+				if !strings.HasPrefix(fm, "png") && fm != "jpeg" {
 					split = "-" // not detectable from the file
 				}
 				p(" %s | %.3f, %.3f |\n", split, float64(one.Size), float64(last.Size))

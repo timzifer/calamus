@@ -4,11 +4,12 @@ go 1.26.4
 
 require (
 	github.com/HugoSmits86/nativewebp v1.3.0
-	github.com/timzifer/calamus v0.0.0-00010101000000-000000000000
+	github.com/timzifer/calamus v0.3.0
 	github.com/timzifer/cera v0.4.0
 	github.com/timzifer/figure v0.14.0
 	github.com/timzifer/figure/backend/gg v0.12.0
 	golang.org/x/image v0.46.0
+	golang.org/x/sys v0.48.0
 )
 
 require (
@@ -23,7 +24,6 @@ require (
 	github.com/gogpu/gputypes v0.5.2 // indirect
 	github.com/tannevaled/gobig2 v0.2.0 // indirect
 	github.com/timzifer/stilus v0.8.0 // indirect
-	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
 )
 

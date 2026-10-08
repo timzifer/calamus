@@ -232,7 +232,7 @@ func (enc *Encoder) writeFrames(cw *chunkWriter, a *Animation, srcs []*source) e
 	}
 	return band.Run(len(units), workers, func(i int) error {
 		u := &units[i]
-		return u.band.encode(srcs[u.frame], level, u.last, nil)
+		return u.band.encode(srcs[u.frame], enc.compressor(), level, u.last, nil)
 	}, func(i int) error {
 		u := &units[i]
 		if u.first {

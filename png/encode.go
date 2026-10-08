@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/timzifer/calamus/deflate"
 	"github.com/timzifer/calamus/internal/band"
 )
 
@@ -56,6 +57,16 @@ type Encoder struct {
 	// Workers is the number of goroutines encoding bands; 0 means
 	// GOMAXPROCS. With one worker the image is encoded as one band.
 	Workers int
+	// Compressor deflates the rows; nil means compress/flate. See package
+	// deflate; FastCompression has a compressor of its own.
+	Compressor deflate.Compressor
+}
+
+func (enc *Encoder) compressor() deflate.Compressor {
+	if enc.Compressor == nil {
+		return deflate.Standard
+	}
+	return enc.Compressor
 }
 
 // FormatError reports that an image cannot be encoded as PNG.
@@ -144,7 +155,7 @@ func (enc *Encoder) writeIDATs(cw *chunkWriter, src *source) error {
 		iw := &idatWriter{cw: cw, buf: append(make([]byte, 0, idatSize), h[:]...)}
 		bd := &bands[0]
 		bd.y0, bd.y1 = 0, src.h
-		if err := bd.encode(src, level, true, iw); err != nil {
+		if err := bd.encode(src, enc.compressor(), level, true, iw); err != nil {
 			return err
 		}
 		iw.flush()
@@ -155,7 +166,7 @@ func (enc *Encoder) writeIDATs(cw *chunkWriter, src *source) error {
 	}
 	err := band.Run(len(bands), workers, func(i int) error {
 		bands[i].y0, bands[i].y1 = ys[i], ys[i+1]
-		return bands[i].encode(src, level, i == len(bands)-1, nil)
+		return bands[i].encode(src, enc.compressor(), level, i == len(bands)-1, nil)
 	}, func(i int) error {
 		bd := &bands[i]
 		if i == 0 {
@@ -187,7 +198,7 @@ const dictSize = 32 << 10
 //
 // The rows go to the compressor one at a time, so that a band holds its
 // compressed bytes only: into bd.data, or into out if it is not nil.
-func (bd *pngBand) encode(src *source, level CompressionLevel, last bool, out io.Writer) error {
+func (bd *pngBand) encode(src *source, c deflate.Compressor, level CompressionLevel, last bool, out io.Writer) error {
 	f := newFilterer(src, level)
 	var dict []byte
 	if bd.y0 > 0 && level != NoCompression && level != FastCompression {
@@ -205,13 +216,13 @@ func (bd *pngBand) encode(src *source, level CompressionLevel, last bool, out io
 	}
 	var zw interface{ Write([]byte) (int, error) }
 	var fb *fastBlock
-	var fz *flate.Writer
+	var fz deflate.Writer
 	if level == FastCompression {
 		fb = newFastBlock(out, src.bpp)
 		zw = fb
 	} else {
 		var err error
-		if fz, err = getCompressor(out, level, dict); err != nil {
+		if fz, err = getCompressor(out, c, level, dict); err != nil {
 			return err
 		}
 		zw = fz
@@ -253,7 +264,7 @@ func (bd *pngBand) encode(src *source, level CompressionLevel, last bool, out io
 		err = fz.Flush()
 	}
 	if fz != nil {
-		putCompressor(fz, level, dict)
+		putCompressor(fz, c, level, dict)
 	}
 	bd.n, bd.adler = n, a.Sum32()
 	if sw != nil {
@@ -277,29 +288,35 @@ func getRowChunk() []byte {
 }
 
 // Compressors without a dictionary are kept between bands and calls, one
-// pool per level: a compressor's state is about a megabyte. A primed one
-// is made anew, as Reset keeps the dictionary a compressor was made with.
-var compressors sync.Map // CompressionLevel to *sync.Pool
+// pool per compressor and level: a compressor's state is about a
+// megabyte. A primed one is made anew, as Reset keeps the dictionary a
+// compressor was made with.
+var compressors sync.Map // poolKey to *sync.Pool
 
-func getCompressor(w io.Writer, level CompressionLevel, dict []byte) (*flate.Writer, error) {
+type poolKey struct {
+	c     deflate.Compressor
+	level CompressionLevel
+}
+
+func getCompressor(w io.Writer, c deflate.Compressor, level CompressionLevel, dict []byte) (deflate.Writer, error) {
 	if dict != nil {
-		return flate.NewWriterDict(w, level.flate(), dict)
+		return c.NewWriterDict(w, level.flate(), dict)
 	}
-	if p, ok := compressors.Load(level); ok {
-		if zw, ok := p.(*sync.Pool).Get().(*flate.Writer); ok {
+	if p, ok := compressors.Load(poolKey{c, level}); ok {
+		if zw, ok := p.(*sync.Pool).Get().(deflate.Writer); ok {
 			zw.Reset(w)
 			return zw, nil
 		}
 	}
-	return flate.NewWriter(w, level.flate())
+	return c.NewWriter(w, level.flate())
 }
 
-func putCompressor(zw *flate.Writer, level CompressionLevel, dict []byte) {
+func putCompressor(zw deflate.Writer, c deflate.Compressor, level CompressionLevel, dict []byte) {
 	if dict != nil {
 		return
 	}
 	zw.Reset(io.Discard) // drop the reference to the output
-	p, _ := compressors.LoadOrStore(level, new(sync.Pool))
+	p, _ := compressors.LoadOrStore(poolKey{c, level}, new(sync.Pool))
 	p.(*sync.Pool).Put(zw)
 }
 
