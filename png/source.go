@@ -38,6 +38,10 @@ type source struct {
 	bpp       int // bytes per complete pixel, for the filters (at least 1)
 	pal       color.Palette
 	kind      int
+	// detached: the rows are a band of a larger image that does not start
+	// at its top, encoded without the row above (see Writer). Its first row
+	// may then only use filters that do not read the previous row.
+	detached bool
 }
 
 func newSource(m image.Image) *source {
@@ -79,23 +83,29 @@ func newSource(m image.Image) *source {
 			}
 		}
 	}
+	s.kind = kindOf(m)
+	return s
+}
+
+// kindOf is the fast path for m's type, if it has one.
+func kindOf(m image.Image) int {
 	switch m.(type) {
 	case *image.Gray:
-		s.kind = kindGray
+		return kindGray
 	case *image.Gray16:
-		s.kind = kindGray16
+		return kindGray16
 	case *image.RGBA:
-		s.kind = kindRGBA
+		return kindRGBA
 	case *image.NRGBA:
-		s.kind = kindNRGBA
+		return kindNRGBA
 	case *image.RGBA64:
-		s.kind = kindRGBA64
+		return kindRGBA64
 	case *image.NRGBA64:
-		s.kind = kindNRGBA64
+		return kindNRGBA64
 	case *image.Paletted:
-		s.kind = kindPaletted
+		return kindPaletted
 	}
-	return s
+	return kindGeneric
 }
 
 // rowBytes is the length of a scanline without its filter byte; checkSize
