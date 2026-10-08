@@ -41,7 +41,7 @@ func (l CompressionLevel) flate() int {
 // a 32 KiB window, FLEVEL as zlib sets it, a check making it divisible by 31).
 func (l CompressionLevel) zlibHeader() [2]byte {
 	switch l {
-	case NoCompression, BestSpeed:
+	case NoCompression, BestSpeed, FastCompression:
 		return [2]byte{0x78, 0x01}
 	case BestCompression:
 		return [2]byte{0x78, 0xda}
@@ -190,7 +190,7 @@ const dictSize = 32 << 10
 func (bd *pngBand) encode(src *source, level CompressionLevel, last bool, out io.Writer) error {
 	f := newFilterer(src, level)
 	var dict []byte
-	if bd.y0 > 0 && level != NoCompression {
+	if bd.y0 > 0 && level != NoCompression && level != FastCompression {
 		stride := src.rowBytes() + 1
 		d0 := max(0, bd.y0-((dictSize-1)/stride+1))
 		dict = f.rows(d0, bd.y0, make([]byte, 0, (bd.y0-d0)*stride))
@@ -203,9 +203,18 @@ func (bd *pngBand) encode(src *source, level CompressionLevel, last bool, out io
 		sw = &sliceWriter{b: make([]byte, 0, (bd.y1-bd.y0)*(src.rowBytes()+1)/4+64)}
 		out = sw
 	}
-	zw, err := getCompressor(out, level, dict)
-	if err != nil {
-		return err
+	var zw interface{ Write([]byte) (int, error) }
+	var fb *fastBlock
+	var fz *flate.Writer
+	if level == FastCompression {
+		fb = newFastBlock(out, src.bpp)
+		zw = fb
+	} else {
+		var err error
+		if fz, err = getCompressor(out, level, dict); err != nil {
+			return err
+		}
+		zw = fz
 	}
 	// Rows are gathered into chunks of about rowChunk bytes, so that the
 	// compressor and the checksum see few large writes, not two per row.
@@ -219,7 +228,7 @@ func (bd *pngBand) encode(src *source, level CompressionLevel, last bool, out io
 		buf = buf[:0]
 		return err
 	}
-	err = f.each(bd.y0, bd.y1, func(ft byte, row []byte) error {
+	err := f.each(bd.y0, bd.y1, func(ft byte, row []byte) error {
 		if len(buf) > 0 && len(buf)+1+len(row) > rowChunk {
 			if err := write(); err != nil {
 				return err
@@ -232,16 +241,20 @@ func (bd *pngBand) encode(src *source, level CompressionLevel, last bool, out io
 		err = write()
 	}
 	rowChunks.Put(&buf)
-	if err == nil {
-		if last {
-			err = zw.Close()
-		} else {
-			// A sync flush ends the band on a byte boundary without ending
-			// the stream; the next band's data continues it.
-			err = zw.Flush()
-		}
+	switch {
+	case err != nil:
+	case fb != nil:
+		err = fb.close(last)
+	case last:
+		err = fz.Close()
+	default:
+		// A sync flush ends the band on a byte boundary without ending the
+		// stream; the next band's data continues it.
+		err = fz.Flush()
 	}
-	putCompressor(zw, level, dict)
+	if fz != nil {
+		putCompressor(fz, level, dict)
+	}
 	bd.n, bd.adler = n, a.Sum32()
 	if sw != nil {
 		bd.data = sw.b
