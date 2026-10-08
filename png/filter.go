@@ -50,6 +50,9 @@ func (f *filterer) each(y0, y1 int, fn func(ft byte, row []byte) error) error {
 		switch {
 		case f.noFilter:
 			err = fn(ftNone, f.cur)
+		case y == 0 && f.src.detached:
+			ft := f.chooseWithoutPrev()
+			err = fn(byte(ft), f.cand[ft])
 		case bytes.Equal(f.cur, f.prev):
 			err = fn(ftUp, f.zeros)
 		default:
@@ -151,6 +154,33 @@ func (f *filterer) choose() int {
 		ft = ftAverage
 	}
 	return ft
+}
+
+// chooseWithoutPrev is choose for a row whose previous row the decoder
+// has but the encoder does not: of the filters that do not read it, None
+// and Sub, in image/png's order, the first of equal sums kept.
+func (f *filterer) chooseWithoutPrev() int {
+	cur, bpp := f.cur, f.src.bpp
+	n := len(cur)
+	best := 0
+	for i := range n {
+		best += abs8(cur[i])
+	}
+	copy(f.cand[ftNone], cur)
+	sb := f.cand[ftSub][:n]
+	sum := 0
+	for i := 0; i < bpp && i < n; i++ {
+		sb[i] = cur[i]
+		sum += abs8(sb[i])
+	}
+	for i := bpp; i < n && sum < best; i++ {
+		sb[i] = cur[i] - cur[i-bpp]
+		sum += abs8(sb[i])
+	}
+	if sum < best {
+		return ftSub
+	}
+	return ftNone
 }
 
 // paeth is the Paeth predictor (PNG specification, 9.4).

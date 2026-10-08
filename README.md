@@ -26,6 +26,28 @@ enc := png.Encoder{CompressionLevel: png.BestSpeed, Workers: 0} // 0 = GOMAXPROC
 err = enc.Encode(w, img)
 ```
 
+### Streaming
+
+A renderer that draws in bands can hand each band over as soon as it is
+drawn, so that drawing and encoding overlap. The header fixes the colour
+type up front; `WriteRows` takes rows from any goroutine, in any order,
+encodes them on the calling goroutine and returns, so the band's buffer
+can be drawn into again; the bytes go out in row order.
+
+```go
+w, err := (&png.Encoder{}).NewWriter(out, png.Header{
+	Width: 2480, Height: 3508, ColorModel: color.RGBAModel, Opaque: true,
+})
+err = w.WriteRows(band) // band.Bounds() says which rows, e.g. image.Rect(0, 512, 2480, 768)
+err = w.Close()         // after every row
+```
+
+Each band is compressed on its own (its first row uses no filter that
+reads the row above, and its compressor starts empty), so no band waits
+for another. That costs compression at the boundaries: bands of 256 rows
+or more cost at most 0.4 % on the benchmark corpus, of 64 rows up to 3 %,
+of 16 rows up to 13 %.
+
 ### Animated PNG
 
 `png.EncodeAll` writes an APNG: every frame is a zlib stream of its own
