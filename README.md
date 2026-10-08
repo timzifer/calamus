@@ -48,6 +48,27 @@ for another. That costs compression at the boundaries: bands of 256 rows
 or more cost at most 0.4 % on the benchmark corpus, of 64 rows up to 3 %,
 of 16 rows up to 13 %.
 
+### Fast mode
+
+`CompressionLevel: png.FastCompression` is calamus's own level, after
+[fpng](https://github.com/richgel999/fpng): every row filtered with Up,
+deflate matches only one pixel back, and prefix codes per block from the
+symbols counted on the way. Against `image/png` at `BestSpeed`
+([report](bench/reports/2026-10-08-amd-ryzen-7-5800h-with-radeon-graphics-windows-png-fast.md),
+same machine and corpus as above):
+
+| images | 1 worker: time | 16 workers: time | size |
+|---|---|---|---|
+| photos, test graphics, a diagram (500² and larger) | 0.38–0.45 | 0.09–0.27; a 500² photo 0.45 (one band) | 0.89–1.06 |
+| noise | 0.22 | 0.08 | 1.00 |
+| a rendered document page, a text-like page | 0.80–0.86 | 0.18–0.19 | **1.43–2.25** |
+
+It is the faster choice for photos and graphics. It is not for text and
+line art: their repeats lie further back than a pixel, so the files come
+out up to twice as large for little gain in time; use `BestSpeed` there.
+For a batch of images, one worker per image gets 1.17–2.49× image/png's
+throughput at 16 goroutines.
+
 ### Animated PNG
 
 `png.EncodeAll` writes an APNG: every frame is a zlib stream of its own

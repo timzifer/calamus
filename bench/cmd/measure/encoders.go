@@ -39,6 +39,15 @@ var formats = map[string]format{
 			return (&cpng.Encoder{CompressionLevel: cpng.BestSpeed, Workers: n}).Encode(w, m.(image.Image))
 		},
 	},
+	"png-fast": {
+		name: "png-fast", ref: "image/png", settings: "image/png at BestSpeed, calamus at FastCompression",
+		refEncode: func(w io.Writer, m any) error {
+			return (&stdpng.Encoder{CompressionLevel: stdpng.BestSpeed}).Encode(w, m.(image.Image))
+		},
+		encode: func(w io.Writer, m any, n int) error {
+			return (&cpng.Encoder{CompressionLevel: cpng.FastCompression, Workers: n}).Encode(w, m.(image.Image))
+		},
+	},
 	"jpeg": {
 		name: "jpeg", ref: "image/jpeg", settings: "quality 75",
 		refEncode: func(w io.Writer, m any) error {

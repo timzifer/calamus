@@ -336,7 +336,7 @@ func memory(j job, input any) (result, error) {
 // chunks in a PNG, a restart interval in a JPEG.
 func severalBands(format string, b []byte) bool {
 	switch format {
-	case "png":
+	case "png", "png-fast":
 		idat := 0
 		for b = b[8:]; len(b) >= 12; {
 			n := int(binary.BigEndian.Uint32(b))

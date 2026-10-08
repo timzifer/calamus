@@ -19,6 +19,7 @@ const (
 type filterer struct {
 	src       *source
 	noFilter  bool // palette images and no compression: filter None, as image/png does
+	fast      bool // FastCompression: Up on every row
 	cur, prev []byte
 	cand      [5][]byte
 	zeros     []byte // an Up-filtered row equal to the previous one
@@ -26,7 +27,7 @@ type filterer struct {
 
 func newFilterer(src *source, level CompressionLevel) *filterer {
 	n := src.rowBytes()
-	f := &filterer{src: src, noFilter: src.colorType == ctPalette || level == NoCompression}
+	f := &filterer{src: src, noFilter: src.colorType == ctPalette || level == NoCompression, fast: level == FastCompression}
 	f.cur, f.prev, f.zeros = make([]byte, n), make([]byte, n), make([]byte, n)
 	if !f.noFilter {
 		for i := range f.cand {
@@ -50,9 +51,17 @@ func (f *filterer) each(y0, y1 int, fn func(ft byte, row []byte) error) error {
 		switch {
 		case f.noFilter:
 			err = fn(ftNone, f.cur)
+		case y == 0 && f.src.detached && f.fast:
+			err = fn(ftNone, f.cur)
 		case y == 0 && f.src.detached:
 			ft := f.chooseWithoutPrev()
 			err = fn(byte(ft), f.cand[ft])
+		case f.fast:
+			up := f.cand[ftUp][:len(f.cur)]
+			for i, c := range f.cur {
+				up[i] = c - f.prev[i]
+			}
+			err = fn(ftUp, up)
 		case bytes.Equal(f.cur, f.prev):
 			err = fn(ftUp, f.zeros)
 		default:
