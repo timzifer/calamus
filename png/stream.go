@@ -268,7 +268,7 @@ func (enc *Encoder) encodeRows(src *source, last bool) (*bandData, error) {
 	d := &bandData{adler: 1}
 	err := band.Run(len(bands), workers, func(i int) error {
 		bands[i].y0, bands[i].y1 = ys[i], ys[i+1]
-		return bands[i].encode(src, level, last && i == len(bands)-1, nil)
+		return bands[i].encode(src, enc.compressor(), level, last && i == len(bands)-1, nil)
 	}, func(i int) error {
 		bd := &bands[i]
 		d.parts = append(d.parts, bd.data)
