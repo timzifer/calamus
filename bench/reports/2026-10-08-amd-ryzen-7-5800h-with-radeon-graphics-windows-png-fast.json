@@ -1,0 +1,9107 @@
+{
+ "Meta": {
+  "Date": "2026-10-08",
+  "Commit": "4dd5fd82a0b9438ada651c88c9f429a832305b08",
+  "Command": "G:\\golang\\measure.exe -v -formats png-fast -parts latency,batch -name png-fast -out reports",
+  "Go": "go1.27.1",
+  "OS": "windows",
+  "Arch": "amd64",
+  "CPU": "AMD Ryzen 7 5800H with Radeon Graphics",
+  "LogicalCPUs": 16,
+  "PhysicalCores": 8,
+  "Budgets": [
+   1,
+   2,
+   4,
+   8,
+   16
+  ],
+  "Affinity": "none: GOMAXPROCS only; other processes may share the CPUs",
+  "MemoryMetric": "peak working set (Windows)",
+  "GOGC": "default (100)",
+  "Corpus": "short",
+  "Runs": 5,
+  "Images": 16,
+  "Dependencies": {
+   "github.com/HugoSmits86/nativewebp": "v1.3.0",
+   "github.com/ajroetker/go-highway": "v0.0.12",
+   "github.com/andybalholm/brotli": "v1.2.6",
+   "github.com/go-images/jpeg": "v0.2.0",
+   "github.com/go-images/jpeg2000": "v0.13.2",
+   "github.com/go-opentype/fonts": "v0.10.0",
+   "github.com/go-opentype/opentype": "v0.13.0",
+   "github.com/gogpu/gg": "v0.52.5",
+   "github.com/gogpu/gpucontext": "v0.28.0",
+   "github.com/gogpu/gputypes": "v0.5.2",
+   "github.com/tannevaled/gobig2": "v0.2.0",
+   "github.com/timzifer/calamus": "replaced by ../",
+   "github.com/timzifer/cera": "v0.4.0",
+   "github.com/timzifer/figure": "v0.14.0",
+   "github.com/timzifer/figure/backend/gg": "v0.12.0",
+   "github.com/timzifer/stilus": "v0.8.0",
+   "golang.org/x/image": "v0.46.0",
+   "golang.org/x/sys": "v0.48.0",
+   "golang.org/x/text": "v0.42.0"
+  },
+  "Method": [
+   "Every job runs in a fresh process with GOMAXPROCS set to its budget; no CPU affinity is set.",
+   "Each implementation encodes once before timing (warm-up, output check); timings are of warmed, repeated encodes.",
+   "Within a run the implementations take turns in a rotating order, so the machine's load falls on all alike.",
+   "Latency: each encode is timed on its own (QueryPerformanceCounter on Windows, whose Go clock is too coarse for small images); a run is a loop of at least 200ms per implementation; its ratio is the median encode time over the reference's.",
+   "CPU: process user+system time over the whole loop or batch, per image, over the reference's. Windows counts it in scheduler ticks (~15.6 ms), hence the long loops.",
+   "Batch: a fixed number of independent copies of the image; configurations are workers×outer with workers×outer = budget; throughput is the reference's batch time over the configuration's.",
+   "Memory: one encode per fresh process (cold) or after three encodes and one collection, which keeps sync.Pools filled (warm); heap in use (objects, including those not yet collected) sampled every 1 ms during the encode (a sampled peak, not an exact one), bytes allocated (runtime.MemStats), and the process's high-water mark, which includes the input and the Go runtime. Output goes to a writer that keeps nothing. Median of several processes.",
+   "Summary: the median of the per-run ratios, with their range; a range across 1.00 is marked ~ (inconclusive).",
+   "Only ratios are reported: times say more about the machine and its load than about the encoders."
+  ]
+ },
+ "Fixtures": [
+  {
+   "Name": "photo/small/keong-macan-64",
+   "Category": "photo",
+   "Size": "small",
+   "Kind": "real",
+   "FileSHA256": "00b23ff5b1444bb3572304a7d229f091033c669c96fa7627c865d040e69631fa",
+   "PixelSHA256": "4585b0751b8abcc3ea4cb04f6f1aaed142d22b1c2a24a777058a3416d1decd36"
+  },
+  {
+   "Name": "photo/medium/keong-macan-500",
+   "Category": "photo",
+   "Size": "medium",
+   "Kind": "real",
+   "FileSHA256": "eb9189de8004dd0e56c5ccd8312567ae325bcef42861e2bfc86b064f4c4861b6",
+   "PixelSHA256": "3b197a6e7a7e315349fd2475eb8987887b2c517bb03e9d6cf8d4b80f13a95317"
+  },
+  {
+   "Name": "photo/large/flower",
+   "Category": "photo",
+   "Size": "large",
+   "Kind": "real",
+   "FileSHA256": "77ea5436547c82c9be2f72308f13b64de3dc889d8c9f3708be3638e6e17cff41",
+   "PixelSHA256": "1060f0738d8b4e74367156012f58e7bc8a9bb7af81a8a185a4c6662ee6f8ee79"
+  },
+  {
+   "Name": "graphic/medium/p3-color-bars",
+   "Category": "graphic",
+   "Size": "medium",
+   "Kind": "real",
+   "FileSHA256": "55af57a76b2e6e5560facc7f80b9dcb63c0a08bf71b4658070d580d5529557e8",
+   "PixelSHA256": "7ee573104c3801dff7f4f7cd9ab1e7474f19dcbca2d9d08d3401d8719ca832a4"
+  },
+  {
+   "Name": "document/medium/attention-p3-150dpi",
+   "Category": "document",
+   "Size": "medium",
+   "Kind": "real",
+   "FileSHA256": "bdfaa68d8984f0dc02beaca527b76f207d99b666d31d1da728ee0728182df697",
+   "PixelSHA256": "5eed691b8a1f31f315e7be4df181aa45e7974587f9ea3bbff14e4ffd6a81206e"
+  },
+  {
+   "Name": "diagram/medium/lines-800x500",
+   "Category": "diagram",
+   "Size": "medium",
+   "Kind": "real",
+   "FileSHA256": "",
+   "PixelSHA256": "78c2f53444639a73582d7a731985f7de73651cbc9375b2dee88e836ab6ae05df"
+  },
+  {
+   "Name": "synthetic/medium/page-1240x1754",
+   "Category": "synthetic",
+   "Size": "medium",
+   "Kind": "synthetic",
+   "FileSHA256": "",
+   "PixelSHA256": "f0370477fdfb30157106af2f3c42d04aa40adf6b8efbb591b3985123b1723df8"
+  },
+  {
+   "Name": "synthetic/medium/noise-1240x1754",
+   "Category": "synthetic",
+   "Size": "medium",
+   "Kind": "synthetic",
+   "FileSHA256": "",
+   "PixelSHA256": "8ebd8fe2b32cd59002bb6f0c421b000844ebbd65cc20ff2ca71ca0f5ed1347c6"
+  }
+ ],
+ "Unavailable": null,
+ "Latency": [
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.80194,
+    "Min": 0.614766,
+    "Max": 0.841502,
+    "Runs": [
+     0.614766,
+     0.80194,
+     0.825586,
+     0.841502,
+     0.645793
+    ]
+   },
+   "CPU": {
+    "Median": 0.615385,
+    "Min": 0.571429,
+    "Max": 0.692308,
+    "Runs": [
+     0.692308,
+     0.571429,
+     0.615385,
+     0.615385,
+     0.583333
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.653196
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 2,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.627473,
+    "Min": 0.605211,
+    "Max": 0.660845,
+    "Runs": [
+     0.605211,
+     0.660845,
+     0.652251,
+     0.627473,
+     0.622672
+    ]
+   },
+   "CPU": {
+    "Median": 0.75,
+    "Min": 0.611111,
+    "Max": 0.823529,
+    "Runs": [
+     0.75,
+     0.764706,
+     0.647059,
+     0.611111,
+     0.823529
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.653196
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 2,
+   "Impl": "calamus-2",
+   "Time": {
+    "Median": 0.628608,
+    "Min": 0.569962,
+    "Max": 0.789414,
+    "Runs": [
+     0.569962,
+     0.631903,
+     0.789414,
+     0.628608,
+     0.620712
+    ]
+   },
+   "CPU": {
+    "Median": 0.705882,
+    "Min": 0.611111,
+    "Max": 0.882353,
+    "Runs": [
+     0.6875,
+     0.705882,
+     0.882353,
+     0.611111,
+     0.823529
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.653196
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 4,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.681911,
+    "Min": 0.555079,
+    "Max": 0.696519,
+    "Runs": [
+     0.681911,
+     0.555079,
+     0.682735,
+     0.696519,
+     0.637971
+    ]
+   },
+   "CPU": {
+    "Median": 0.818182,
+    "Min": 0.5,
+    "Max": 0.826087,
+    "Runs": [
+     0.818182,
+     0.823529,
+     0.826087,
+     0.5,
+     0.8
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.653196
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 4,
+   "Impl": "calamus-4",
+   "Time": {
+    "Median": 0.662724,
+    "Min": 0.555651,
+    "Max": 0.674061,
+    "Runs": [
+     0.674061,
+     0.555651,
+     0.669402,
+     0.662724,
+     0.64419
+    ]
+   },
+   "CPU": {
+    "Median": 0.5,
+    "Min": 0.409091,
+    "Max": 0.866667,
+    "Runs": [
+     0.409091,
+     0.764706,
+     0.478261,
+     0.5,
+     0.866667
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.653196
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 8,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.648041,
+    "Min": 0.584706,
+    "Max": 0.718288,
+    "Runs": [
+     0.584706,
+     0.624447,
+     0.648041,
+     0.692596,
+     0.718288
+    ]
+   },
+   "CPU": {
+    "Median": 0.789474,
+    "Min": 0.592593,
+    "Max": 1.25,
+    "Runs": [
+     0.789474,
+     1.06667,
+     0.695652,
+     0.592593,
+     1.25
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.653196
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 8,
+   "Impl": "calamus-8",
+   "Time": {
+    "Median": 0.63994,
+    "Min": 0.598863,
+    "Max": 0.711319,
+    "Runs": [
+     0.606155,
+     0.598863,
+     0.63994,
+     0.711319,
+     0.677552
+    ]
+   },
+   "CPU": {
+    "Median": 0.526316,
+    "Min": 0.444444,
+    "Max": 0.875,
+    "Runs": [
+     0.526316,
+     0.533333,
+     0.478261,
+     0.444444,
+     0.875
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.653196
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.581077,
+    "Min": 0.56094,
+    "Max": 0.751466,
+    "Runs": [
+     0.751466,
+     0.6298,
+     0.581077,
+     0.56094,
+     0.568114
+    ]
+   },
+   "CPU": {
+    "Median": 0.842105,
+    "Min": 0.275,
+    "Max": 0.894737,
+    "Runs": [
+     0.705882,
+     0.842105,
+     0.851852,
+     0.275,
+     0.894737
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.653196
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 0.603994,
+    "Min": 0.548605,
+    "Max": 0.735704,
+    "Runs": [
+     0.735704,
+     0.603994,
+     0.576614,
+     0.548605,
+     0.61392
+    ]
+   },
+   "CPU": {
+    "Median": 0.526316,
+    "Min": 0.325,
+    "Max": 1.31579,
+    "Runs": [
+     0.647059,
+     1.31579,
+     0.407407,
+     0.325,
+     0.526316
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 0.653196
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.449326,
+    "Min": 0.446121,
+    "Max": 0.460781,
+    "Runs": [
+     0.457325,
+     0.449326,
+     0.448532,
+     0.460781,
+     0.446121
+    ]
+   },
+   "CPU": {
+    "Median": 0.44,
+    "Min": 0.423077,
+    "Max": 0.5,
+    "Runs": [
+     0.44,
+     0.423077,
+     0.44,
+     0.5,
+     0.461538
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.03685
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 2,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.461165,
+    "Min": 0.437547,
+    "Max": 0.547212,
+    "Runs": [
+     0.453609,
+     0.47336,
+     0.437547,
+     0.547212,
+     0.461165
+    ]
+   },
+   "CPU": {
+    "Median": 0.481481,
+    "Min": 0.413793,
+    "Max": 0.653846,
+    "Runs": [
+     0.481481,
+     0.413793,
+     0.444444,
+     0.653846,
+     0.533333
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.03685
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 2,
+   "Impl": "calamus-2",
+   "Time": {
+    "Median": 0.476364,
+    "Min": 0.432936,
+    "Max": 0.562195,
+    "Runs": [
+     0.450693,
+     0.476364,
+     0.432936,
+     0.562195,
+     0.487096
+    ]
+   },
+   "CPU": {
+    "Median": 0.482759,
+    "Min": 0.481481,
+    "Max": 0.615385,
+    "Runs": [
+     0.481481,
+     0.482759,
+     0.481481,
+     0.615385,
+     0.5
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.03685
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 4,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.468268,
+    "Min": 0.45711,
+    "Max": 0.517844,
+    "Runs": [
+     0.45711,
+     0.482574,
+     0.461444,
+     0.517844,
+     0.468268
+    ]
+   },
+   "CPU": {
+    "Median": 0.517241,
+    "Min": 0.393939,
+    "Max": 0.580645,
+    "Runs": [
+     0.464286,
+     0.517241,
+     0.393939,
+     0.580645,
+     0.53125
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.03685
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 4,
+   "Impl": "calamus-4",
+   "Time": {
+    "Median": 0.46848,
+    "Min": 0.454608,
+    "Max": 0.508233,
+    "Runs": [
+     0.483498,
+     0.454608,
+     0.46848,
+     0.508233,
+     0.467217
+    ]
+   },
+   "CPU": {
+    "Median": 0.5,
+    "Min": 0.393939,
+    "Max": 0.586207,
+    "Runs": [
+     0.5,
+     0.586207,
+     0.393939,
+     0.516129,
+     0.5
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.03685
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 8,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.457111,
+    "Min": 0.444052,
+    "Max": 0.461899,
+    "Runs": [
+     0.457111,
+     0.444106,
+     0.461899,
+     0.459386,
+     0.444052
+    ]
+   },
+   "CPU": {
+    "Median": 0.481481,
+    "Min": 0.444444,
+    "Max": 0.5,
+    "Runs": [
+     0.481481,
+     0.5,
+     0.481481,
+     0.444444,
+     0.444444
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.03685
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 8,
+   "Impl": "calamus-8",
+   "Time": {
+    "Median": 0.451697,
+    "Min": 0.446558,
+    "Max": 0.461864,
+    "Runs": [
+     0.449904,
+     0.451697,
+     0.456771,
+     0.461864,
+     0.446558
+    ]
+   },
+   "CPU": {
+    "Median": 0.481481,
+    "Min": 0.464286,
+    "Max": 0.555556,
+    "Runs": [
+     0.518519,
+     0.464286,
+     0.481481,
+     0.481481,
+     0.555556
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.03685
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.451255,
+    "Min": 0.426004,
+    "Max": 0.475384,
+    "Runs": [
+     0.445806,
+     0.451589,
+     0.475384,
+     0.426004,
+     0.451255
+    ]
+   },
+   "CPU": {
+    "Median": 0.482759,
+    "Min": 0.342105,
+    "Max": 1,
+    "Runs": [
+     0.482759,
+     0.428571,
+     1,
+     0.342105,
+     0.678571
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.03685
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 0.45181,
+    "Min": 0.433188,
+    "Max": 0.454768,
+    "Runs": [
+     0.45181,
+     0.454768,
+     0.441143,
+     0.433188,
+     0.454167
+    ]
+   },
+   "CPU": {
+    "Median": 0.421053,
+    "Min": 0.392857,
+    "Max": 0.714286,
+    "Runs": [
+     0.551724,
+     0.392857,
+     0.4,
+     0.421053,
+     0.714286
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.03685
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.383083,
+    "Min": 0.363201,
+    "Max": 0.388512,
+    "Runs": [
+     0.379455,
+     0.388281,
+     0.388512,
+     0.363201,
+     0.383083
+    ]
+   },
+   "CPU": {
+    "Median": 0.404762,
+    "Min": 0.372093,
+    "Max": 0.404762,
+    "Runs": [
+     0.380952,
+     0.404762,
+     0.404762,
+     0.372093,
+     0.404762
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.05728
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 2,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.393487,
+    "Min": 0.374288,
+    "Max": 0.404988,
+    "Runs": [
+     0.404988,
+     0.393487,
+     0.396213,
+     0.378749,
+     0.374288
+    ]
+   },
+   "CPU": {
+    "Median": 0.380282,
+    "Min": 0.356164,
+    "Max": 0.405797,
+    "Runs": [
+     0.405797,
+     0.364865,
+     0.380282,
+     0.383562,
+     0.356164
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.05728
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 2,
+   "Impl": "calamus-2",
+   "Time": {
+    "Median": 0.222325,
+    "Min": 0.206953,
+    "Max": 0.247889,
+    "Runs": [
+     0.222325,
+     0.247889,
+     0.22722,
+     0.206953,
+     0.216027
+    ]
+   },
+   "CPU": {
+    "Median": 0.43662,
+    "Min": 0.383562,
+    "Max": 0.449275,
+    "Runs": [
+     0.449275,
+     0.445946,
+     0.43662,
+     0.410959,
+     0.383562
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.0571
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 4,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.375633,
+    "Min": 0.355745,
+    "Max": 0.415762,
+    "Runs": [
+     0.384395,
+     0.355745,
+     0.415762,
+     0.368917,
+     0.375633
+    ]
+   },
+   "CPU": {
+    "Median": 0.373832,
+    "Min": 0.34,
+    "Max": 0.401961,
+    "Runs": [
+     0.391753,
+     0.373832,
+     0.401961,
+     0.37,
+     0.34
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.05728
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 4,
+   "Impl": "calamus-4",
+   "Time": {
+    "Median": 0.126786,
+    "Min": 0.115753,
+    "Max": 0.132063,
+    "Runs": [
+     0.132063,
+     0.115753,
+     0.130897,
+     0.122212,
+     0.126786
+    ]
+   },
+   "CPU": {
+    "Median": 0.460784,
+    "Min": 0.411215,
+    "Max": 0.51,
+    "Runs": [
+     0.463918,
+     0.411215,
+     0.460784,
+     0.46,
+     0.51
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.05703
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 8,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.389409,
+    "Min": 0.386291,
+    "Max": 0.500247,
+    "Runs": [
+     0.388959,
+     0.500247,
+     0.408615,
+     0.389409,
+     0.386291
+    ]
+   },
+   "CPU": {
+    "Median": 0.393443,
+    "Min": 0.359155,
+    "Max": 0.427419,
+    "Runs": [
+     0.385965,
+     0.427419,
+     0.425197,
+     0.393443,
+     0.359155
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.05728
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 8,
+   "Impl": "calamus-8",
+   "Time": {
+    "Median": 0.102033,
+    "Min": 0.0925229,
+    "Max": 0.109513,
+    "Runs": [
+     0.109513,
+     0.102033,
+     0.0940841,
+     0.106032,
+     0.0925229
+    ]
+   },
+   "CPU": {
+    "Median": 0.604839,
+    "Min": 0.556338,
+    "Max": 0.736842,
+    "Runs": [
+     0.736842,
+     0.604839,
+     0.574803,
+     0.622951,
+     0.556338
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.05715
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.415884,
+    "Min": 0.384719,
+    "Max": 0.455198,
+    "Runs": [
+     0.385657,
+     0.384719,
+     0.455198,
+     0.415884,
+     0.44031
+    ]
+   },
+   "CPU": {
+    "Median": 0.42953,
+    "Min": 0.378571,
+    "Max": 0.451852,
+    "Runs": [
+     0.416,
+     0.378571,
+     0.445255,
+     0.42953,
+     0.451852
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.05728
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 0.0939481,
+    "Min": 0.0847202,
+    "Max": 0.129501,
+    "Runs": [
+     0.102879,
+     0.0847202,
+     0.129501,
+     0.0900346,
+     0.0939481
+    ]
+   },
+   "CPU": {
+    "Median": 0.671533,
+    "Min": 0.57047,
+    "Max": 0.816,
+    "Runs": [
+     0.816,
+     0.628571,
+     0.671533,
+     0.57047,
+     0.718519
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.05718
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.437418,
+    "Min": 0.406152,
+    "Max": 0.45522,
+    "Runs": [
+     0.437828,
+     0.437256,
+     0.45522,
+     0.437418,
+     0.406152
+    ]
+   },
+   "CPU": {
+    "Median": 0.433333,
+    "Min": 0.413793,
+    "Max": 0.5,
+    "Runs": [
+     0.413793,
+     0.5,
+     0.464286,
+     0.428571,
+     0.433333
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 0.891143
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 2,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.471048,
+    "Min": 0.422683,
+    "Max": 0.492365,
+    "Runs": [
+     0.458712,
+     0.471048,
+     0.492365,
+     0.483877,
+     0.422683
+    ]
+   },
+   "CPU": {
+    "Median": 0.454545,
+    "Min": 0.444444,
+    "Max": 0.510638,
+    "Runs": [
+     0.444444,
+     0.454545,
+     0.45098,
+     0.510638,
+     0.462963
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 0.891143
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 2,
+   "Impl": "calamus-2",
+   "Time": {
+    "Median": 0.294603,
+    "Min": 0.259024,
+    "Max": 0.344859,
+    "Runs": [
+     0.283091,
+     0.294603,
+     0.259024,
+     0.344859,
+     0.306951
+    ]
+   },
+   "CPU": {
+    "Median": 0.611111,
+    "Min": 0.392157,
+    "Max": 0.688889,
+    "Runs": [
+     0.688889,
+     0.545455,
+     0.392157,
+     0.617021,
+     0.611111
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 0.8901
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 4,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.449904,
+    "Min": 0.433414,
+    "Max": 0.482711,
+    "Runs": [
+     0.441951,
+     0.449904,
+     0.482711,
+     0.476848,
+     0.433414
+    ]
+   },
+   "CPU": {
+    "Median": 0.469697,
+    "Min": 0.419355,
+    "Max": 0.578125,
+    "Runs": [
+     0.435484,
+     0.419355,
+     0.578125,
+     0.469697,
+     0.476923
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 0.891143
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 4,
+   "Impl": "calamus-4",
+   "Time": {
+    "Median": 0.20685,
+    "Min": 0.175435,
+    "Max": 0.214679,
+    "Runs": [
+     0.175435,
+     0.182062,
+     0.211009,
+     0.214679,
+     0.20685
+    ]
+   },
+   "CPU": {
+    "Median": 0.636364,
+    "Min": 0.403226,
+    "Max": 0.796875,
+    "Runs": [
+     0.629032,
+     0.403226,
+     0.796875,
+     0.636364,
+     0.723077
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 0.8901
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 8,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.460599,
+    "Min": 0.43045,
+    "Max": 0.48869,
+    "Runs": [
+     0.442716,
+     0.43045,
+     0.460599,
+     0.461543,
+     0.48869
+    ]
+   },
+   "CPU": {
+    "Median": 0.463415,
+    "Min": 0.442857,
+    "Max": 0.486842,
+    "Runs": [
+     0.442857,
+     0.447368,
+     0.463415,
+     0.46988,
+     0.486842
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 0.891143
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 8,
+   "Impl": "calamus-8",
+   "Time": {
+    "Median": 0.193993,
+    "Min": 0.160072,
+    "Max": 0.198782,
+    "Runs": [
+     0.167902,
+     0.160072,
+     0.193993,
+     0.194652,
+     0.198782
+    ]
+   },
+   "CPU": {
+    "Median": 0.671053,
+    "Min": 0.414286,
+    "Max": 0.684211,
+    "Runs": [
+     0.414286,
+     0.671053,
+     0.560976,
+     0.674699,
+     0.684211
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 0.8901
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.44592,
+    "Min": 0.403713,
+    "Max": 0.459834,
+    "Runs": [
+     0.449118,
+     0.440535,
+     0.459834,
+     0.403713,
+     0.44592
+    ]
+   },
+   "CPU": {
+    "Median": 0.491525,
+    "Min": 0.40625,
+    "Max": 0.509434,
+    "Runs": [
+     0.509434,
+     0.491525,
+     0.507937,
+     0.40625,
+     0.431034
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 0.891143
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 0.178607,
+    "Min": 0.149481,
+    "Max": 0.196097,
+    "Runs": [
+     0.170095,
+     0.194883,
+     0.196097,
+     0.149481,
+     0.178607
+    ]
+   },
+   "CPU": {
+    "Median": 0.672414,
+    "Min": 0.509434,
+    "Max": 0.745763,
+    "Runs": [
+     0.509434,
+     0.745763,
+     0.68254,
+     0.5625,
+     0.672414
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 0.8901
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.862278,
+    "Min": 0.846818,
+    "Max": 0.88373,
+    "Runs": [
+     0.857769,
+     0.862278,
+     0.846818,
+     0.86744,
+     0.88373
+    ]
+   },
+   "CPU": {
+    "Median": 0.916667,
+    "Min": 0.833333,
+    "Max": 1,
+    "Runs": [
+     1,
+     1,
+     0.833333,
+     0.833333,
+     0.916667
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.43189
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 2,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.861889,
+    "Min": 0.84479,
+    "Max": 0.879858,
+    "Runs": [
+     0.84479,
+     0.855752,
+     0.862429,
+     0.861889,
+     0.879858
+    ]
+   },
+   "CPU": {
+    "Median": 0.866667,
+    "Min": 0.78125,
+    "Max": 0.962963,
+    "Runs": [
+     0.78125,
+     0.962963,
+     0.866667,
+     0.866667,
+     0.862069
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.43189
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 2,
+   "Impl": "calamus-2",
+   "Time": {
+    "Median": 0.500254,
+    "Min": 0.490318,
+    "Max": 0.510231,
+    "Runs": [
+     0.502188,
+     0.490318,
+     0.49777,
+     0.500254,
+     0.510231
+    ]
+   },
+   "CPU": {
+    "Median": 0.9,
+    "Min": 0.866667,
+    "Max": 1,
+    "Runs": [
+     0.875,
+     1,
+     0.9,
+     0.866667,
+     1
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.42964
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 4,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.859291,
+    "Min": 0.854576,
+    "Max": 0.871247,
+    "Runs": [
+     0.859291,
+     0.854576,
+     0.855027,
+     0.871247,
+     0.863469
+    ]
+   },
+   "CPU": {
+    "Median": 0.926829,
+    "Min": 0.860465,
+    "Max": 0.953488,
+    "Runs": [
+     0.931818,
+     0.926829,
+     0.860465,
+     0.904762,
+     0.953488
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.43189
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 4,
+   "Impl": "calamus-4",
+   "Time": {
+    "Median": 0.329498,
+    "Min": 0.318128,
+    "Max": 0.340076,
+    "Runs": [
+     0.330851,
+     0.318128,
+     0.329498,
+     0.32588,
+     0.340076
+    ]
+   },
+   "CPU": {
+    "Median": 1,
+    "Min": 0.860465,
+    "Max": 1.12195,
+    "Runs": [
+     1,
+     1.12195,
+     0.976744,
+     1.02381,
+     0.860465
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.42994
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 8,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.85228,
+    "Min": 0.841751,
+    "Max": 0.899504,
+    "Runs": [
+     0.85228,
+     0.841751,
+     0.897527,
+     0.851995,
+     0.899504
+    ]
+   },
+   "CPU": {
+    "Median": 0.830189,
+    "Min": 0.820896,
+    "Max": 0.888889,
+    "Runs": [
+     0.830189,
+     0.888889,
+     0.820896,
+     0.852941,
+     0.822581
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.43189
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 8,
+   "Impl": "calamus-8",
+   "Time": {
+    "Median": 0.265821,
+    "Min": 0.216254,
+    "Max": 0.287733,
+    "Runs": [
+     0.287733,
+     0.265821,
+     0.216254,
+     0.256159,
+     0.271024
+    ]
+   },
+   "CPU": {
+    "Median": 1.09677,
+    "Min": 1.0597,
+    "Max": 1.16667,
+    "Runs": [
+     1.07547,
+     1.16667,
+     1.0597,
+     1.13235,
+     1.09677
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.43775
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.827328,
+    "Min": 0.656545,
+    "Max": 0.845708,
+    "Runs": [
+     0.845708,
+     0.656545,
+     0.840858,
+     0.800734,
+     0.827328
+    ]
+   },
+   "CPU": {
+    "Median": 0.821053,
+    "Min": 0.669811,
+    "Max": 0.873239,
+    "Runs": [
+     0.873239,
+     0.669811,
+     0.85567,
+     0.821053,
+     0.813187
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.43189
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 0.186719,
+    "Min": 0.16516,
+    "Max": 0.245474,
+    "Runs": [
+     0.245474,
+     0.16516,
+     0.186719,
+     0.176781,
+     0.195147
+    ]
+   },
+   "CPU": {
+    "Median": 1.03093,
+    "Min": 0.849057,
+    "Max": 1.56338,
+    "Runs": [
+     1.56338,
+     0.849057,
+     1.03093,
+     1,
+     1.10989
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.43775
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.419608,
+    "Min": 0.411536,
+    "Max": 0.433728,
+    "Runs": [
+     0.419608,
+     0.433728,
+     0.415457,
+     0.411536,
+     0.426507
+    ]
+   },
+   "CPU": {
+    "Median": 0.423077,
+    "Min": 0.384615,
+    "Max": 0.5,
+    "Runs": [
+     0.423077,
+     0.384615,
+     0.423077,
+     0.416667,
+     0.5
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1.01388
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 2,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.432856,
+    "Min": 0.418274,
+    "Max": 0.454516,
+    "Runs": [
+     0.418274,
+     0.418322,
+     0.452402,
+     0.454516,
+     0.432856
+    ]
+   },
+   "CPU": {
+    "Median": 0.435897,
+    "Min": 0.408163,
+    "Max": 0.526316,
+    "Runs": [
+     0.435897,
+     0.461538,
+     0.526316,
+     0.408163,
+     0.431818
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1.01388
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 2,
+   "Impl": "calamus-2",
+   "Time": {
+    "Median": 0.287028,
+    "Min": 0.26241,
+    "Max": 0.339522,
+    "Runs": [
+     0.26241,
+     0.272553,
+     0.287028,
+     0.329375,
+     0.339522
+    ]
+   },
+   "CPU": {
+    "Median": 0.510204,
+    "Min": 0.461538,
+    "Max": 0.552632,
+    "Runs": [
+     0.461538,
+     0.512821,
+     0.552632,
+     0.510204,
+     0.5
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.01473
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 4,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.41452,
+    "Min": 0.394771,
+    "Max": 0.427428,
+    "Runs": [
+     0.416751,
+     0.427428,
+     0.412614,
+     0.41452,
+     0.394771
+    ]
+   },
+   "CPU": {
+    "Median": 0.42,
+    "Min": 0.4,
+    "Max": 0.454545,
+    "Runs": [
+     0.425926,
+     0.42,
+     0.4,
+     0.454545,
+     0.41791
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1.01388
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 4,
+   "Impl": "calamus-4",
+   "Time": {
+    "Median": 0.273517,
+    "Min": 0.239425,
+    "Max": 0.335612,
+    "Runs": [
+     0.266465,
+     0.273517,
+     0.239425,
+     0.335612,
+     0.296687
+    ]
+   },
+   "CPU": {
+    "Median": 0.48,
+    "Min": 0.425926,
+    "Max": 0.636364,
+    "Runs": [
+     0.425926,
+     0.48,
+     0.433333,
+     0.636364,
+     0.552239
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.01473
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 8,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.4143,
+    "Min": 0.397628,
+    "Max": 0.419661,
+    "Runs": [
+     0.411097,
+     0.418491,
+     0.4143,
+     0.397628,
+     0.419661
+    ]
+   },
+   "CPU": {
+    "Median": 0.415094,
+    "Min": 0.396825,
+    "Max": 0.508475,
+    "Runs": [
+     0.415094,
+     0.403846,
+     0.508475,
+     0.396825,
+     0.431034
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1.01388
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 8,
+   "Impl": "calamus-8",
+   "Time": {
+    "Median": 0.270821,
+    "Min": 0.255883,
+    "Max": 0.331767,
+    "Runs": [
+     0.265382,
+     0.270821,
+     0.255883,
+     0.316242,
+     0.331767
+    ]
+   },
+   "CPU": {
+    "Median": 0.5,
+    "Min": 0.440678,
+    "Max": 0.586207,
+    "Runs": [
+     0.566038,
+     0.5,
+     0.440678,
+     0.492063,
+     0.586207
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.01473
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.418315,
+    "Min": 0.363562,
+    "Max": 0.422425,
+    "Runs": [
+     0.414995,
+     0.422425,
+     0.421097,
+     0.418315,
+     0.363562
+    ]
+   },
+   "CPU": {
+    "Median": 0.431034,
+    "Min": 0.371429,
+    "Max": 0.482759,
+    "Runs": [
+     0.423077,
+     0.442308,
+     0.431034,
+     0.482759,
+     0.371429
+    ]
+   },
+   "SeveralBands": false,
+   "Size": 1.01388
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 0.274474,
+    "Min": 0.246988,
+    "Max": 0.324449,
+    "Runs": [
+     0.274474,
+     0.268441,
+     0.246988,
+     0.324449,
+     0.286701
+    ]
+   },
+   "CPU": {
+    "Median": 0.528571,
+    "Min": 0.448276,
+    "Max": 0.576923,
+    "Runs": [
+     0.461538,
+     0.576923,
+     0.448276,
+     0.551724,
+     0.528571
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.01473
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.797908,
+    "Min": 0.789589,
+    "Max": 0.827368,
+    "Runs": [
+     0.79411,
+     0.789589,
+     0.797908,
+     0.805726,
+     0.827368
+    ]
+   },
+   "CPU": {
+    "Median": 0.764706,
+    "Min": 0.666667,
+    "Max": 0.777778,
+    "Runs": [
+     0.764706,
+     0.777778,
+     0.764706,
+     0.764706,
+     0.666667
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 2.24561
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 2,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.784853,
+    "Min": 0.756392,
+    "Max": 0.960117,
+    "Runs": [
+     0.805084,
+     0.784853,
+     0.770656,
+     0.960117,
+     0.756392
+    ]
+   },
+   "CPU": {
+    "Median": 0.782609,
+    "Min": 0.666667,
+    "Max": 0.92,
+    "Runs": [
+     0.782609,
+     0.863636,
+     0.730769,
+     0.92,
+     0.666667
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 2.24561
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 2,
+   "Impl": "calamus-2",
+   "Time": {
+    "Median": 0.458698,
+    "Min": 0.437214,
+    "Max": 0.570543,
+    "Runs": [
+     0.437214,
+     0.456765,
+     0.458698,
+     0.570543,
+     0.508462
+    ]
+   },
+   "CPU": {
+    "Median": 0.866667,
+    "Min": 0.807692,
+    "Max": 1.12,
+    "Runs": [
+     0.826087,
+     0.909091,
+     0.807692,
+     1.12,
+     0.866667
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 2.24525
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 4,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.807039,
+    "Min": 0.805112,
+    "Max": 0.902865,
+    "Runs": [
+     0.838377,
+     0.807039,
+     0.902865,
+     0.805112,
+     0.806078
+    ]
+   },
+   "CPU": {
+    "Median": 0.851064,
+    "Min": 0.825,
+    "Max": 0.878049,
+    "Runs": [
+     0.825,
+     0.878049,
+     0.869565,
+     0.851064,
+     0.851064
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 2.24561
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 4,
+   "Impl": "calamus-4",
+   "Time": {
+    "Median": 0.310659,
+    "Min": 0.293889,
+    "Max": 0.314064,
+    "Runs": [
+     0.31082,
+     0.293889,
+     0.295162,
+     0.310659,
+     0.314064
+    ]
+   },
+   "CPU": {
+    "Median": 1.02128,
+    "Min": 0.878049,
+    "Max": 1.21277,
+    "Runs": [
+     1.1,
+     0.878049,
+     0.978261,
+     1.02128,
+     1.21277
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 2.24535
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 8,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.789056,
+    "Min": 0.7315,
+    "Max": 0.871873,
+    "Runs": [
+     0.81528,
+     0.7315,
+     0.768762,
+     0.789056,
+     0.871873
+    ]
+   },
+   "CPU": {
+    "Median": 0.8,
+    "Min": 0.725806,
+    "Max": 0.852459,
+    "Runs": [
+     0.8,
+     0.725806,
+     0.790323,
+     0.803279,
+     0.852459
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 2.24561
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 8,
+   "Impl": "calamus-8",
+   "Time": {
+    "Median": 0.245862,
+    "Min": 0.219935,
+    "Max": 0.259714,
+    "Runs": [
+     0.232417,
+     0.219935,
+     0.245862,
+     0.256232,
+     0.259714
+    ]
+   },
+   "CPU": {
+    "Median": 1.16393,
+    "Min": 0.872727,
+    "Max": 1.43548,
+    "Runs": [
+     0.872727,
+     1.01613,
+     1.43548,
+     1.40984,
+     1.16393
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 2.24503
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.798058,
+    "Min": 0.770109,
+    "Max": 0.842119,
+    "Runs": [
+     0.829433,
+     0.770109,
+     0.842119,
+     0.798058,
+     0.786231
+    ]
+   },
+   "CPU": {
+    "Median": 0.815385,
+    "Min": 0.745763,
+    "Max": 0.941176,
+    "Runs": [
+     0.941176,
+     0.745763,
+     0.84375,
+     0.815385,
+     0.815385
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 2.24561
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 0.17937,
+    "Min": 0.166145,
+    "Max": 0.206888,
+    "Runs": [
+     0.206888,
+     0.17937,
+     0.185328,
+     0.16771,
+     0.166145
+    ]
+   },
+   "CPU": {
+    "Median": 1.28125,
+    "Min": 0.898305,
+    "Max": 1.63077,
+    "Runs": [
+     1.58824,
+     0.898305,
+     1.28125,
+     1,
+     1.63077
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 2.24503
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 1,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.222632,
+    "Min": 0.20752,
+    "Max": 0.237152,
+    "Runs": [
+     0.20752,
+     0.210431,
+     0.232662,
+     0.237152,
+     0.222632
+    ]
+   },
+   "CPU": {
+    "Median": 0.241935,
+    "Min": 0.216667,
+    "Max": 0.262295,
+    "Runs": [
+     0.224138,
+     0.216667,
+     0.241935,
+     0.25,
+     0.262295
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.0004
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 2,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.229165,
+    "Min": 0.205717,
+    "Max": 0.249337,
+    "Runs": [
+     0.205717,
+     0.206641,
+     0.234743,
+     0.229165,
+     0.249337
+    ]
+   },
+   "CPU": {
+    "Median": 0.235294,
+    "Min": 0.203883,
+    "Max": 0.254902,
+    "Runs": [
+     0.212766,
+     0.203883,
+     0.242424,
+     0.235294,
+     0.254902
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.0004
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 2,
+   "Impl": "calamus-2",
+   "Time": {
+    "Median": 0.16021,
+    "Min": 0.119769,
+    "Max": 0.174885,
+    "Runs": [
+     0.129637,
+     0.119769,
+     0.174885,
+     0.16021,
+     0.164016
+    ]
+   },
+   "CPU": {
+    "Median": 0.313725,
+    "Min": 0.223404,
+    "Max": 0.333333,
+    "Runs": [
+     0.223404,
+     0.23301,
+     0.333333,
+     0.313725,
+     0.323529
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.00023
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 4,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.207055,
+    "Min": 0.200679,
+    "Max": 0.213607,
+    "Runs": [
+     0.200679,
+     0.213607,
+     0.207392,
+     0.205235,
+     0.207055
+    ]
+   },
+   "CPU": {
+    "Median": 0.21831,
+    "Min": 0.209459,
+    "Max": 0.237762,
+    "Runs": [
+     0.209459,
+     0.225352,
+     0.215278,
+     0.21831,
+     0.237762
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.0004
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 4,
+   "Impl": "calamus-4",
+   "Time": {
+    "Median": 0.0898106,
+    "Min": 0.0846832,
+    "Max": 0.10485,
+    "Runs": [
+     0.0898106,
+     0.10485,
+     0.0916043,
+     0.0876158,
+     0.0846832
+    ]
+   },
+   "CPU": {
+    "Median": 0.305556,
+    "Min": 0.125874,
+    "Max": 0.330986,
+    "Runs": [
+     0.304054,
+     0.330986,
+     0.305556,
+     0.330986,
+     0.125874
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.00025
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 8,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.209995,
+    "Min": 0.20619,
+    "Max": 0.222787,
+    "Runs": [
+     0.209995,
+     0.206583,
+     0.20619,
+     0.222787,
+     0.213511
+    ]
+   },
+   "CPU": {
+    "Median": 0.216561,
+    "Min": 0.197452,
+    "Max": 0.228395,
+    "Runs": [
+     0.219355,
+     0.197452,
+     0.205128,
+     0.216561,
+     0.228395
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.0004
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 8,
+   "Impl": "calamus-8",
+   "Time": {
+    "Median": 0.0801365,
+    "Min": 0.0717802,
+    "Max": 0.0929681,
+    "Runs": [
+     0.0717802,
+     0.0775651,
+     0.0847062,
+     0.0929681,
+     0.0801365
+    ]
+   },
+   "CPU": {
+    "Median": 0.452229,
+    "Min": 0.314103,
+    "Max": 0.537037,
+    "Runs": [
+     0.380645,
+     0.452229,
+     0.314103,
+     0.496815,
+     0.537037
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.00028
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 16,
+   "Impl": "calamus-1",
+   "Time": {
+    "Median": 0.228587,
+    "Min": 0.206827,
+    "Max": 0.250309,
+    "Runs": [
+     0.214413,
+     0.206827,
+     0.250309,
+     0.228587,
+     0.244673
+    ]
+   },
+   "CPU": {
+    "Median": 0.230263,
+    "Min": 0.198675,
+    "Max": 0.240741,
+    "Runs": [
+     0.21831,
+     0.198675,
+     0.233918,
+     0.240741,
+     0.230263
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.0004
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 16,
+   "Impl": "calamus-16",
+   "Time": {
+    "Median": 0.0818835,
+    "Min": 0.0720456,
+    "Max": 0.0878895,
+    "Runs": [
+     0.0818835,
+     0.0780791,
+     0.0841849,
+     0.0720456,
+     0.0878895
+    ]
+   },
+   "CPU": {
+    "Median": 0.549669,
+    "Min": 0.154321,
+    "Max": 0.640845,
+    "Runs": [
+     0.640845,
+     0.549669,
+     0.549708,
+     0.154321,
+     0.381579
+    ]
+   },
+   "SeveralBands": true,
+   "Size": 1.00028
+  }
+ ],
+ "Batch": [
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 1,
+   "Config": "calamus-1x1",
+   "Wall": {
+    "Median": 0.604023,
+    "Min": 0.591166,
+    "Max": 0.658325,
+    "Runs": [
+     0.604023,
+     0.591166,
+     0.598201,
+     0.658325,
+     0.627191
+    ]
+   },
+   "Throughput": {
+    "Median": 1.65557,
+    "Min": 1.51901,
+    "Max": 1.69157,
+    "Runs": [
+     1.65557,
+     1.69157,
+     1.67168,
+     1.51901,
+     1.59441
+    ]
+   },
+   "CPU": {
+    "Median": 0.583333,
+    "Min": 0.583333,
+    "Max": 0.636364,
+    "Runs": [
+     0.583333,
+     0.583333,
+     0.636364,
+     0.583333,
+     0.636364
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.578906,
+    "Min": 0.454478,
+    "Max": 0.801484,
+    "Runs": [
+     0.454478,
+     0.575919,
+     0.578906,
+     0.801484,
+     0.62029
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 2,
+   "Config": "calamus-1x2",
+   "Wall": {
+    "Median": 0.841077,
+    "Min": 0.834338,
+    "Max": 0.858638,
+    "Runs": [
+     0.841077,
+     0.841058,
+     0.834338,
+     0.845756,
+     0.858638
+    ]
+   },
+   "Throughput": {
+    "Median": 1.18895,
+    "Min": 1.16464,
+    "Max": 1.19855,
+    "Runs": [
+     1.18895,
+     1.18898,
+     1.19855,
+     1.18237,
+     1.16464
+    ]
+   },
+   "CPU": {
+    "Median": 0.777778,
+    "Min": 0.6,
+    "Max": 0.888889,
+    "Runs": [
+     0.888889,
+     0.777778,
+     0.6,
+     0.888889,
+     0.714286
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.796908,
+    "Min": 0.750357,
+    "Max": 0.813456,
+    "Runs": [
+     0.813456,
+     0.788683,
+     0.750357,
+     0.806059,
+     0.796908
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 2,
+   "Config": "calamus-2x1",
+   "Wall": {
+    "Median": 0.929464,
+    "Min": 0.896893,
+    "Max": 0.979681,
+    "Runs": [
+     0.896893,
+     0.902315,
+     0.979681,
+     0.929464,
+     0.942155
+    ]
+   },
+   "Throughput": {
+    "Median": 1.07589,
+    "Min": 1.02074,
+    "Max": 1.11496,
+    "Runs": [
+     1.11496,
+     1.10826,
+     1.02074,
+     1.07589,
+     1.0614
+    ]
+   },
+   "CPU": {
+    "Median": 0.65,
+    "Min": 0.611111,
+    "Max": 0.888889,
+    "Runs": [
+     0.888889,
+     0.611111,
+     0.65,
+     0.666667,
+     0.619048
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.340546,
+    "Min": 0.327996,
+    "Max": 0.361091,
+    "Runs": [
+     0.334075,
+     0.327996,
+     0.361091,
+     0.340546,
+     0.348641
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 4,
+   "Config": "calamus-1x4",
+   "Wall": {
+    "Median": 1.00366,
+    "Min": 0.929752,
+    "Max": 1.0259,
+    "Runs": [
+     1.00366,
+     0.929752,
+     1.00957,
+     0.967852,
+     1.0259
+    ]
+   },
+   "Throughput": {
+    "Median": 0.996353,
+    "Min": 0.974752,
+    "Max": 1.07556,
+    "Runs": [
+     0.996353,
+     1.07556,
+     0.990517,
+     1.03322,
+     0.974752
+    ]
+   },
+   "CPU": {
+    "Median": 0.92,
+    "Min": 0.648649,
+    "Max": 1.27273,
+    "Runs": [
+     0.92,
+     0.657895,
+     1.27273,
+     0.648649,
+     1.22222
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.977197,
+    "Min": 0.909429,
+    "Max": 1.03711,
+    "Runs": [
+     0.977197,
+     0.909429,
+     0.988439,
+     0.952967,
+     1.03711
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 4,
+   "Config": "calamus-2x2",
+   "Wall": {
+    "Median": 1.20147,
+    "Min": 1.16444,
+    "Max": 1.25583,
+    "Runs": [
+     1.20147,
+     1.22455,
+     1.25583,
+     1.19077,
+     1.16444
+    ]
+   },
+   "Throughput": {
+    "Median": 0.832317,
+    "Min": 0.796289,
+    "Max": 0.858781,
+    "Runs": [
+     0.832317,
+     0.816627,
+     0.796289,
+     0.839796,
+     0.858781
+    ]
+   },
+   "CPU": {
+    "Median": 1,
+    "Min": 0.567568,
+    "Max": 1.37037,
+    "Runs": [
+     1.28,
+     0.868421,
+     1,
+     0.567568,
+     1.37037
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.589375,
+    "Min": 0.578432,
+    "Max": 0.61288,
+    "Runs": [
+     0.589375,
+     0.597317,
+     0.61288,
+     0.582932,
+     0.578432
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 4,
+   "Config": "calamus-4x1",
+   "Wall": {
+    "Median": 1.59409,
+    "Min": 1.51777,
+    "Max": 1.65736,
+    "Runs": [
+     1.65736,
+     1.51777,
+     1.59394,
+     1.62294,
+     1.59409
+    ]
+   },
+   "Throughput": {
+    "Median": 0.627316,
+    "Min": 0.603371,
+    "Max": 0.658861,
+    "Runs": [
+     0.603371,
+     0.658861,
+     0.627376,
+     0.616165,
+     0.627316
+    ]
+   },
+   "CPU": {
+    "Median": 1,
+    "Min": 0.552632,
+    "Max": 1.25926,
+    "Runs": [
+     1.04,
+     0.552632,
+     1,
+     0.567568,
+     1.25926
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.324082,
+    "Min": 0.300288,
+    "Max": 0.337367,
+    "Runs": [
+     0.324969,
+     0.300288,
+     0.322234,
+     0.324082,
+     0.337367
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 8,
+   "Config": "calamus-1x8",
+   "Wall": {
+    "Median": 1.04472,
+    "Min": 0.896201,
+    "Max": 1.20002,
+    "Runs": [
+     1.07787,
+     0.896201,
+     1.04472,
+     1.0383,
+     1.20002
+    ]
+   },
+   "Throughput": {
+    "Median": 0.957198,
+    "Min": 0.833322,
+    "Max": 1.11582,
+    "Runs": [
+     0.927759,
+     1.11582,
+     0.957198,
+     0.963114,
+     0.833322
+    ]
+   },
+   "CPU": {
+    "Median": 0.722222,
+    "Min": 0.475,
+    "Max": 0.942857,
+    "Runs": [
+     0.942857,
+     0.857143,
+     0.475,
+     0.545455,
+     0.722222
+    ]
+   },
+   "ImageLatency": {
+    "Median": 1.06837,
+    "Min": 0.905747,
+    "Max": 1.25581,
+    "Runs": [
+     1.06837,
+     0.905747,
+     1.09247,
+     1.03788,
+     1.25581
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 8,
+   "Config": "calamus-2x4",
+   "Wall": {
+    "Median": 1.27029,
+    "Min": 1.0532,
+    "Max": 1.67888,
+    "Runs": [
+     1.27029,
+     1.0532,
+     1.42094,
+     1.1634,
+     1.67888
+    ]
+   },
+   "Throughput": {
+    "Median": 0.787222,
+    "Min": 0.595634,
+    "Max": 0.949489,
+    "Runs": [
+     0.787222,
+     0.949489,
+     0.703762,
+     0.859549,
+     0.595634
+    ]
+   },
+   "CPU": {
+    "Median": 0.714286,
+    "Min": 0.484848,
+    "Max": 0.861111,
+    "Runs": [
+     0.742857,
+     0.714286,
+     0.55,
+     0.484848,
+     0.861111
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.629585,
+    "Min": 0.535596,
+    "Max": 0.893575,
+    "Runs": [
+     0.629585,
+     0.535596,
+     0.694367,
+     0.597513,
+     0.893575
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 8,
+   "Config": "calamus-4x2",
+   "Wall": {
+    "Median": 1.61321,
+    "Min": 1.54503,
+    "Max": 2.08813,
+    "Runs": [
+     1.61321,
+     1.54503,
+     1.55046,
+     1.66513,
+     2.08813
+    ]
+   },
+   "Throughput": {
+    "Median": 0.619883,
+    "Min": 0.478897,
+    "Max": 0.647235,
+    "Runs": [
+     0.619883,
+     0.647235,
+     0.644969,
+     0.600552,
+     0.478897
+    ]
+   },
+   "CPU": {
+    "Median": 0.69697,
+    "Min": 0.6,
+    "Max": 0.971429,
+    "Runs": [
+     0.971429,
+     0.771429,
+     0.6,
+     0.69697,
+     0.666667
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.397719,
+    "Min": 0.390997,
+    "Max": 0.534713,
+    "Runs": [
+     0.397719,
+     0.390997,
+     0.397655,
+     0.420991,
+     0.534713
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 8,
+   "Config": "calamus-8x1",
+   "Wall": {
+    "Median": 2.21944,
+    "Min": 2.10511,
+    "Max": 2.31696,
+    "Runs": [
+     2.28667,
+     2.18826,
+     2.10511,
+     2.21944,
+     2.31696
+    ]
+   },
+   "Throughput": {
+    "Median": 0.450565,
+    "Min": 0.431599,
+    "Max": 0.475035,
+    "Runs": [
+     0.437317,
+     0.456985,
+     0.475035,
+     0.450565,
+     0.431599
+    ]
+   },
+   "CPU": {
+    "Median": 0.542857,
+    "Min": 0.375,
+    "Max": 0.69697,
+    "Runs": [
+     0.685714,
+     0.542857,
+     0.375,
+     0.69697,
+     0.444444
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.2255,
+    "Min": 0.22029,
+    "Max": 0.238479,
+    "Runs": [
+     0.226548,
+     0.2255,
+     0.22029,
+     0.222579,
+     0.238479
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-16x1",
+   "Wall": {
+    "Median": 2.48934,
+    "Min": 2.26111,
+    "Max": 3.37368,
+    "Runs": [
+     2.75502,
+     2.26111,
+     2.48934,
+     2.45775,
+     3.37368
+    ]
+   },
+   "Throughput": {
+    "Median": 0.401713,
+    "Min": 0.296413,
+    "Max": 0.44226,
+    "Runs": [
+     0.362974,
+     0.44226,
+     0.401713,
+     0.406876,
+     0.296413
+    ]
+   },
+   "CPU": {
+    "Median": 0.76087,
+    "Min": 0.405063,
+    "Max": 1.18605,
+    "Runs": [
+     0.76087,
+     0.405063,
+     0.465753,
+     0.941176,
+     1.18605
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.162694,
+    "Min": 0.133669,
+    "Max": 0.27357,
+    "Runs": [
+     0.171935,
+     0.133669,
+     0.162694,
+     0.159008,
+     0.27357
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-1x16",
+   "Wall": {
+    "Median": 1.11274,
+    "Min": 0.984039,
+    "Max": 1.35499,
+    "Runs": [
+     1.10514,
+     1.16045,
+     1.11274,
+     0.984039,
+     1.35499
+    ]
+   },
+   "Throughput": {
+    "Median": 0.898686,
+    "Min": 0.738014,
+    "Max": 1.01622,
+    "Runs": [
+     0.904859,
+     0.861737,
+     0.898686,
+     1.01622,
+     0.738014
+    ]
+   },
+   "CPU": {
+    "Median": 0.76087,
+    "Min": 0.657534,
+    "Max": 1.4186,
+    "Runs": [
+     0.76087,
+     0.746835,
+     0.657534,
+     1.09804,
+     1.4186
+    ]
+   },
+   "ImageLatency": {
+    "Median": 1.28238,
+    "Min": 1.21153,
+    "Max": 1.97868,
+    "Runs": [
+     1.24814,
+     1.28238,
+     1.32115,
+     1.21153,
+     1.97868
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-2x8",
+   "Wall": {
+    "Median": 1.1622,
+    "Min": 0.978785,
+    "Max": 1.39821,
+    "Runs": [
+     1.39821,
+     1.33759,
+     1.1622,
+     1.16161,
+     0.978785
+    ]
+   },
+   "Throughput": {
+    "Median": 0.860441,
+    "Min": 0.7152,
+    "Max": 1.02167,
+    "Runs": [
+     0.7152,
+     0.747613,
+     0.860441,
+     0.860875,
+     1.02167
+    ]
+   },
+   "CPU": {
+    "Median": 0.849315,
+    "Min": 0.518987,
+    "Max": 1.07843,
+    "Runs": [
+     0.978261,
+     0.518987,
+     0.849315,
+     1.07843,
+     0.534884
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.724903,
+    "Min": 0.68425,
+    "Max": 0.835499,
+    "Runs": [
+     0.835499,
+     0.724903,
+     0.68425,
+     0.745058,
+     0.724715
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-4x4",
+   "Wall": {
+    "Median": 1.43433,
+    "Min": 1.23866,
+    "Max": 1.63269,
+    "Runs": [
+     1.63269,
+     1.23866,
+     1.43433,
+     1.24566,
+     1.44244
+    ]
+   },
+   "Throughput": {
+    "Median": 0.697189,
+    "Min": 0.612488,
+    "Max": 0.807324,
+    "Runs": [
+     0.612488,
+     0.807324,
+     0.697189,
+     0.802785,
+     0.693268
+    ]
+   },
+   "CPU": {
+    "Median": 0.860465,
+    "Min": 0.561644,
+    "Max": 1.11765,
+    "Runs": [
+     0.869565,
+     0.582278,
+     0.561644,
+     1.11765,
+     0.860465
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.434062,
+    "Min": 0.371319,
+    "Max": 0.549133,
+    "Runs": [
+     0.473725,
+     0.371319,
+     0.434062,
+     0.419789,
+     0.549133
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/small/keong-macan-64",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-8x2",
+   "Wall": {
+    "Median": 1.48006,
+    "Min": 1.40564,
+    "Max": 2.22086,
+    "Runs": [
+     1.67109,
+     1.48006,
+     1.40564,
+     1.4577,
+     2.22086
+    ]
+   },
+   "Throughput": {
+    "Median": 0.675647,
+    "Min": 0.450276,
+    "Max": 0.711418,
+    "Runs": [
+     0.598413,
+     0.675647,
+     0.711418,
+     0.686014,
+     0.450276
+    ]
+   },
+   "CPU": {
+    "Median": 0.543478,
+    "Min": 0.438356,
+    "Max": 1.16279,
+    "Runs": [
+     0.543478,
+     0.443038,
+     0.438356,
+     0.862745,
+     1.16279
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.231089,
+    "Min": 0.199717,
+    "Max": 0.431167,
+    "Runs": [
+     0.237347,
+     0.215272,
+     0.199717,
+     0.231089,
+     0.431167
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 1,
+   "Config": "calamus-1x1",
+   "Wall": {
+    "Median": 0.462021,
+    "Min": 0.444831,
+    "Max": 0.538101,
+    "Runs": [
+     0.476858,
+     0.459583,
+     0.538101,
+     0.462021,
+     0.444831
+    ]
+   },
+   "Throughput": {
+    "Median": 2.16441,
+    "Min": 1.85839,
+    "Max": 2.24804,
+    "Runs": [
+     2.09706,
+     2.17589,
+     1.85839,
+     2.16441,
+     2.24804
+    ]
+   },
+   "CPU": {
+    "Median": 0.4375,
+    "Min": 0.4375,
+    "Max": 0.6,
+    "Runs": [
+     0.4375,
+     0.5,
+     0.6,
+     0.4375,
+     0.4375
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.458175,
+    "Min": 0.451762,
+    "Max": 0.499705,
+    "Runs": [
+     0.458175,
+     0.451762,
+     0.499705,
+     0.468441,
+     0.454951
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 2,
+   "Config": "calamus-1x2",
+   "Wall": {
+    "Median": 0.507347,
+    "Min": 0.433452,
+    "Max": 0.532933,
+    "Runs": [
+     0.519747,
+     0.532933,
+     0.47203,
+     0.507347,
+     0.433452
+    ]
+   },
+   "Throughput": {
+    "Median": 1.97104,
+    "Min": 1.87641,
+    "Max": 2.30706,
+    "Runs": [
+     1.92401,
+     1.87641,
+     2.11851,
+     1.97104,
+     2.30706
+    ]
+   },
+   "CPU": {
+    "Median": 0.46875,
+    "Min": 0.421053,
+    "Max": 0.580645,
+    "Runs": [
+     0.580645,
+     0.424242,
+     0.470588,
+     0.46875,
+     0.421053
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.495352,
+    "Min": 0.440828,
+    "Max": 0.524043,
+    "Runs": [
+     0.520024,
+     0.524043,
+     0.476239,
+     0.495352,
+     0.440828
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 2,
+   "Config": "calamus-2x1",
+   "Wall": {
+    "Median": 0.861882,
+    "Min": 0.850189,
+    "Max": 0.929457,
+    "Runs": [
+     0.898519,
+     0.856965,
+     0.850189,
+     0.929457,
+     0.861882
+    ]
+   },
+   "Throughput": {
+    "Median": 1.16025,
+    "Min": 1.0759,
+    "Max": 1.17621,
+    "Runs": [
+     1.11294,
+     1.16691,
+     1.17621,
+     1.0759,
+     1.16025
+    ]
+   },
+   "CPU": {
+    "Median": 0.5,
+    "Min": 0.382353,
+    "Max": 0.548387,
+    "Runs": [
+     0.548387,
+     0.454545,
+     0.382353,
+     0.53125,
+     0.5
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.434955,
+    "Min": 0.427652,
+    "Max": 0.458818,
+    "Runs": [
+     0.440699,
+     0.427652,
+     0.434955,
+     0.458818,
+     0.434869
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 4,
+   "Config": "calamus-1x4",
+   "Wall": {
+    "Median": 0.524644,
+    "Min": 0.492749,
+    "Max": 0.526695,
+    "Runs": [
+     0.5257,
+     0.524644,
+     0.492749,
+     0.514943,
+     0.526695
+    ]
+   },
+   "Throughput": {
+    "Median": 1.90605,
+    "Min": 1.89863,
+    "Max": 2.02943,
+    "Runs": [
+     1.90223,
+     1.90605,
+     2.02943,
+     1.94196,
+     1.89863
+    ]
+   },
+   "CPU": {
+    "Median": 0.425532,
+    "Min": 0.4,
+    "Max": 0.538462,
+    "Runs": [
+     0.425532,
+     0.538462,
+     0.454545,
+     0.4,
+     0.4
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.516013,
+    "Min": 0.493271,
+    "Max": 0.541548,
+    "Runs": [
+     0.516013,
+     0.541548,
+     0.493271,
+     0.521478,
+     0.515204
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 4,
+   "Config": "calamus-2x2",
+   "Wall": {
+    "Median": 0.884905,
+    "Min": 0.872019,
+    "Max": 0.934147,
+    "Runs": [
+     0.934147,
+     0.875619,
+     0.884905,
+     0.905763,
+     0.872019
+    ]
+   },
+   "Throughput": {
+    "Median": 1.13006,
+    "Min": 1.0705,
+    "Max": 1.14676,
+    "Runs": [
+     1.0705,
+     1.14205,
+     1.13006,
+     1.10404,
+     1.14676
+    ]
+   },
+   "CPU": {
+    "Median": 0.490909,
+    "Min": 0.436364,
+    "Max": 0.595745,
+    "Runs": [
+     0.595745,
+     0.442308,
+     0.490909,
+     0.5,
+     0.436364
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.453196,
+    "Min": 0.439301,
+    "Max": 0.460694,
+    "Runs": [
+     0.453196,
+     0.456976,
+     0.439301,
+     0.460694,
+     0.452943
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 4,
+   "Config": "calamus-4x1",
+   "Wall": {
+    "Median": 1.62831,
+    "Min": 1.59495,
+    "Max": 1.71248,
+    "Runs": [
+     1.71248,
+     1.63772,
+     1.607,
+     1.59495,
+     1.62831
+    ]
+   },
+   "Throughput": {
+    "Median": 0.614135,
+    "Min": 0.583948,
+    "Max": 0.626977,
+    "Runs": [
+     0.583948,
+     0.610605,
+     0.622279,
+     0.626977,
+     0.614135
+    ]
+   },
+   "CPU": {
+    "Median": 0.490909,
+    "Min": 0.423077,
+    "Max": 0.54,
+    "Runs": [
+     0.510638,
+     0.423077,
+     0.454545,
+     0.54,
+     0.490909
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.419548,
+    "Min": 0.407787,
+    "Max": 0.428477,
+    "Runs": [
+     0.428477,
+     0.422977,
+     0.407787,
+     0.40988,
+     0.419548
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 8,
+   "Config": "calamus-1x8",
+   "Wall": {
+    "Median": 0.591069,
+    "Min": 0.585866,
+    "Max": 0.61682,
+    "Runs": [
+     0.585866,
+     0.591069,
+     0.61682,
+     0.590613,
+     0.607316
+    ]
+   },
+   "Throughput": {
+    "Median": 1.69185,
+    "Min": 1.62122,
+    "Max": 1.70687,
+    "Runs": [
+     1.70687,
+     1.69185,
+     1.62122,
+     1.69316,
+     1.64659
+    ]
+   },
+   "CPU": {
+    "Median": 0.49,
+    "Min": 0.447059,
+    "Max": 0.543478,
+    "Runs": [
+     0.460784,
+     0.537634,
+     0.447059,
+     0.543478,
+     0.49
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.588301,
+    "Min": 0.582398,
+    "Max": 0.618076,
+    "Runs": [
+     0.586405,
+     0.582398,
+     0.618076,
+     0.588301,
+     0.602176
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 8,
+   "Config": "calamus-2x4",
+   "Wall": {
+    "Median": 0.881264,
+    "Min": 0.854672,
+    "Max": 1.10858,
+    "Runs": [
+     0.854672,
+     1.10858,
+     0.877545,
+     0.881264,
+     0.907243
+    ]
+   },
+   "Throughput": {
+    "Median": 1.13473,
+    "Min": 0.902052,
+    "Max": 1.17004,
+    "Runs": [
+     1.17004,
+     0.902052,
+     1.13954,
+     1.13473,
+     1.10224
+    ]
+   },
+   "CPU": {
+    "Median": 0.51087,
+    "Min": 0.39,
+    "Max": 0.612903,
+    "Runs": [
+     0.411765,
+     0.612903,
+     0.564706,
+     0.51087,
+     0.39
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.451895,
+    "Min": 0.440127,
+    "Max": 0.535563,
+    "Runs": [
+     0.440127,
+     0.535563,
+     0.451895,
+     0.448209,
+     0.45329
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 8,
+   "Config": "calamus-4x2",
+   "Wall": {
+    "Median": 1.55048,
+    "Min": 1.50518,
+    "Max": 1.59104,
+    "Runs": [
+     1.50518,
+     1.55048,
+     1.57004,
+     1.52932,
+     1.59104
+    ]
+   },
+   "Throughput": {
+    "Median": 0.644964,
+    "Min": 0.628519,
+    "Max": 0.664372,
+    "Runs": [
+     0.664372,
+     0.644964,
+     0.636927,
+     0.653885,
+     0.628519
+    ]
+   },
+   "CPU": {
+    "Median": 0.473118,
+    "Min": 0.411765,
+    "Max": 0.517647,
+    "Runs": [
+     0.411765,
+     0.473118,
+     0.517647,
+     0.478261,
+     0.42
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.391418,
+    "Min": 0.386593,
+    "Max": 0.400636,
+    "Runs": [
+     0.386593,
+     0.391418,
+     0.400636,
+     0.389646,
+     0.399272
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 8,
+   "Config": "calamus-8x1",
+   "Wall": {
+    "Median": 2.84735,
+    "Min": 2.77866,
+    "Max": 2.94531,
+    "Runs": [
+     2.94531,
+     2.86841,
+     2.79528,
+     2.77866,
+     2.84735
+    ]
+   },
+   "Throughput": {
+    "Median": 0.351203,
+    "Min": 0.339523,
+    "Max": 0.359885,
+    "Runs": [
+     0.339523,
+     0.348625,
+     0.357746,
+     0.359885,
+     0.351203
+    ]
+   },
+   "CPU": {
+    "Median": 0.458824,
+    "Min": 0.42,
+    "Max": 0.529412,
+    "Runs": [
+     0.529412,
+     0.462366,
+     0.458824,
+     0.423913,
+     0.42
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.356565,
+    "Min": 0.351493,
+    "Max": 0.363117,
+    "Runs": [
+     0.354797,
+     0.356565,
+     0.363117,
+     0.351493,
+     0.356642
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-16x1",
+   "Wall": {
+    "Median": 3.86464,
+    "Min": 3.67086,
+    "Max": 4.01272,
+    "Runs": [
+     3.67086,
+     3.86464,
+     4.01272,
+     3.99317,
+     3.86427
+    ]
+   },
+   "Throughput": {
+    "Median": 0.258756,
+    "Min": 0.249207,
+    "Max": 0.272416,
+    "Runs": [
+     0.272416,
+     0.258756,
+     0.249207,
+     0.250427,
+     0.258781
+    ]
+   },
+   "CPU": {
+    "Median": 0.333333,
+    "Min": 0.302817,
+    "Max": 0.353383,
+    "Runs": [
+     0.333333,
+     0.302817,
+     0.343066,
+     0.306667,
+     0.353383
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.275917,
+    "Min": 0.262699,
+    "Max": 0.27937,
+    "Runs": [
+     0.262699,
+     0.275917,
+     0.278078,
+     0.27937,
+     0.273201
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-1x16",
+   "Wall": {
+    "Median": 0.684421,
+    "Min": 0.662402,
+    "Max": 0.724807,
+    "Runs": [
+     0.662402,
+     0.684421,
+     0.724807,
+     0.723551,
+     0.668038
+    ]
+   },
+   "Throughput": {
+    "Median": 1.46109,
+    "Min": 1.37968,
+    "Max": 1.50966,
+    "Runs": [
+     1.50966,
+     1.46109,
+     1.37968,
+     1.38207,
+     1.49692
+    ]
+   },
+   "CPU": {
+    "Median": 0.489051,
+    "Min": 0.413534,
+    "Max": 0.704225,
+    "Runs": [
+     0.481481,
+     0.704225,
+     0.489051,
+     0.54,
+     0.413534
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.723795,
+    "Min": 0.692203,
+    "Max": 0.751789,
+    "Runs": [
+     0.692203,
+     0.723795,
+     0.751789,
+     0.731168,
+     0.695205
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-2x8",
+   "Wall": {
+    "Median": 0.875328,
+    "Min": 0.791496,
+    "Max": 0.936256,
+    "Runs": [
+     0.791496,
+     0.875328,
+     0.936256,
+     0.883593,
+     0.842051
+    ]
+   },
+   "Throughput": {
+    "Median": 1.14243,
+    "Min": 1.06808,
+    "Max": 1.26343,
+    "Runs": [
+     1.26343,
+     1.14243,
+     1.06808,
+     1.13174,
+     1.18758
+    ]
+   },
+   "CPU": {
+    "Median": 0.444444,
+    "Min": 0.408451,
+    "Max": 0.49635,
+    "Runs": [
+     0.444444,
+     0.408451,
+     0.49635,
+     0.42,
+     0.488722
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.494995,
+    "Min": 0.459355,
+    "Max": 0.512096,
+    "Runs": [
+     0.459355,
+     0.496376,
+     0.512096,
+     0.494995,
+     0.469938
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-4x4",
+   "Wall": {
+    "Median": 1.26093,
+    "Min": 1.1616,
+    "Max": 1.30408,
+    "Runs": [
+     1.1616,
+     1.26093,
+     1.30408,
+     1.28882,
+     1.23423
+    ]
+   },
+   "Throughput": {
+    "Median": 0.793066,
+    "Min": 0.766823,
+    "Max": 0.860883,
+    "Runs": [
+     0.860883,
+     0.793066,
+     0.766823,
+     0.775902,
+     0.81022
+    ]
+   },
+   "CPU": {
+    "Median": 0.355556,
+    "Min": 0.313333,
+    "Max": 0.394366,
+    "Runs": [
+     0.355556,
+     0.394366,
+     0.335766,
+     0.313333,
+     0.383459
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.352121,
+    "Min": 0.330516,
+    "Max": 0.357876,
+    "Runs": [
+     0.330516,
+     0.357876,
+     0.354819,
+     0.352121,
+     0.349453
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/medium/keong-macan-500",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-8x2",
+   "Wall": {
+    "Median": 2.13358,
+    "Min": 2.00335,
+    "Max": 2.27016,
+    "Runs": [
+     2.00335,
+     2.13358,
+     2.24098,
+     2.27016,
+     2.05711
+    ]
+   },
+   "Throughput": {
+    "Median": 0.468696,
+    "Min": 0.440498,
+    "Max": 0.499165,
+    "Runs": [
+     0.499165,
+     0.468696,
+     0.446234,
+     0.440498,
+     0.486119
+    ]
+   },
+   "CPU": {
+    "Median": 0.377778,
+    "Min": 0.333333,
+    "Max": 0.413534,
+    "Runs": [
+     0.377778,
+     0.366197,
+     0.40146,
+     0.333333,
+     0.413534
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.305302,
+    "Min": 0.288096,
+    "Max": 0.310916,
+    "Runs": [
+     0.288096,
+     0.305302,
+     0.309458,
+     0.310916,
+     0.292897
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 1,
+   "Config": "calamus-1x1",
+   "Wall": {
+    "Median": 0.379405,
+    "Min": 0.341334,
+    "Max": 0.385021,
+    "Runs": [
+     0.341334,
+     0.381698,
+     0.385021,
+     0.375836,
+     0.379405
+    ]
+   },
+   "Throughput": {
+    "Median": 2.63571,
+    "Min": 2.59726,
+    "Max": 2.92968,
+    "Runs": [
+     2.92968,
+     2.61987,
+     2.59726,
+     2.66074,
+     2.63571
+    ]
+   },
+   "CPU": {
+    "Median": 0.38326,
+    "Min": 0.360996,
+    "Max": 0.392857,
+    "Runs": [
+     0.360996,
+     0.39207,
+     0.392857,
+     0.368421,
+     0.38326
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.377204,
+    "Min": 0.371735,
+    "Max": 0.381803,
+    "Runs": [
+     0.371735,
+     0.375338,
+     0.378567,
+     0.377204,
+     0.381803
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 2,
+   "Config": "calamus-1x2",
+   "Wall": {
+    "Median": 0.387129,
+    "Min": 0.383056,
+    "Max": 0.496165,
+    "Runs": [
+     0.496165,
+     0.400385,
+     0.386224,
+     0.383056,
+     0.387129
+    ]
+   },
+   "Throughput": {
+    "Median": 2.58312,
+    "Min": 2.01546,
+    "Max": 2.61059,
+    "Runs": [
+     2.01546,
+     2.4976,
+     2.58917,
+     2.61059,
+     2.58312
+    ]
+   },
+   "CPU": {
+    "Median": 0.393939,
+    "Min": 0.385965,
+    "Max": 0.481172,
+    "Runs": [
+     0.481172,
+     0.400881,
+     0.385965,
+     0.393939,
+     0.386957
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.388222,
+    "Min": 0.383919,
+    "Max": 0.480196,
+    "Runs": [
+     0.480196,
+     0.397416,
+     0.387515,
+     0.383919,
+     0.388222
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 2,
+   "Config": "calamus-2x1",
+   "Wall": {
+    "Median": 0.414075,
+    "Min": 0.403399,
+    "Max": 0.425964,
+    "Runs": [
+     0.408639,
+     0.42185,
+     0.403399,
+     0.414075,
+     0.425964
+    ]
+   },
+   "Throughput": {
+    "Median": 2.41502,
+    "Min": 2.34761,
+    "Max": 2.47894,
+    "Runs": [
+     2.44715,
+     2.37051,
+     2.47894,
+     2.41502,
+     2.34761
+    ]
+   },
+   "CPU": {
+    "Median": 0.390351,
+    "Min": 0.384937,
+    "Max": 0.409692,
+    "Runs": [
+     0.384937,
+     0.409692,
+     0.390351,
+     0.406926,
+     0.386957
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.207181,
+    "Min": 0.201442,
+    "Max": 0.216472,
+    "Runs": [
+     0.207181,
+     0.214078,
+     0.201442,
+     0.203576,
+     0.216472
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 4,
+   "Config": "calamus-1x4",
+   "Wall": {
+    "Median": 0.413894,
+    "Min": 0.384653,
+    "Max": 0.424743,
+    "Runs": [
+     0.403074,
+     0.384653,
+     0.419199,
+     0.424743,
+     0.413894
+    ]
+   },
+   "Throughput": {
+    "Median": 2.41608,
+    "Min": 2.35436,
+    "Max": 2.59975,
+    "Runs": [
+     2.48094,
+     2.59975,
+     2.3855,
+     2.35436,
+     2.41608
+    ]
+   },
+   "CPU": {
+    "Median": 0.395161,
+    "Min": 0.370968,
+    "Max": 0.418327,
+    "Runs": [
+     0.394958,
+     0.370968,
+     0.416327,
+     0.418327,
+     0.395161
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.393073,
+    "Min": 0.381629,
+    "Max": 0.418976,
+    "Runs": [
+     0.392703,
+     0.381629,
+     0.417318,
+     0.418976,
+     0.393073
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 4,
+   "Config": "calamus-2x2",
+   "Wall": {
+    "Median": 0.426557,
+    "Min": 0.408082,
+    "Max": 0.545098,
+    "Runs": [
+     0.442315,
+     0.408082,
+     0.426557,
+     0.411127,
+     0.545098
+    ]
+   },
+   "Throughput": {
+    "Median": 2.34435,
+    "Min": 1.83453,
+    "Max": 2.45049,
+    "Runs": [
+     2.26083,
+     2.45049,
+     2.34435,
+     2.43234,
+     1.83453
+    ]
+   },
+   "CPU": {
+    "Median": 0.40239,
+    "Min": 0.371429,
+    "Max": 0.504032,
+    "Runs": [
+     0.42437,
+     0.391129,
+     0.371429,
+     0.40239,
+     0.504032
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.210528,
+    "Min": 0.205626,
+    "Max": 0.270722,
+    "Runs": [
+     0.223856,
+     0.205626,
+     0.210528,
+     0.207734,
+     0.270722
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 4,
+   "Config": "calamus-4x1",
+   "Wall": {
+    "Median": 0.476147,
+    "Min": 0.467743,
+    "Max": 0.568839,
+    "Runs": [
+     0.467743,
+     0.471665,
+     0.485139,
+     0.476147,
+     0.568839
+    ]
+   },
+   "Throughput": {
+    "Median": 2.10019,
+    "Min": 1.75797,
+    "Max": 2.13793,
+    "Runs": [
+     2.13793,
+     2.12015,
+     2.06126,
+     2.10019,
+     1.75797
+    ]
+   },
+   "CPU": {
+    "Median": 0.473469,
+    "Min": 0.399194,
+    "Max": 0.491935,
+    "Runs": [
+     0.407563,
+     0.399194,
+     0.473469,
+     0.486056,
+     0.491935
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.119452,
+    "Min": 0.118163,
+    "Max": 0.144384,
+    "Runs": [
+     0.118174,
+     0.119452,
+     0.122845,
+     0.118163,
+     0.144384
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 8,
+   "Config": "calamus-1x8",
+   "Wall": {
+    "Median": 0.443548,
+    "Min": 0.437242,
+    "Max": 0.455611,
+    "Runs": [
+     0.437242,
+     0.453643,
+     0.443548,
+     0.441519,
+     0.455611
+    ]
+   },
+   "Throughput": {
+    "Median": 2.25455,
+    "Min": 2.19485,
+    "Max": 2.28706,
+    "Runs": [
+     2.28706,
+     2.20438,
+     2.25455,
+     2.26491,
+     2.19485
+    ]
+   },
+   "CPU": {
+    "Median": 0.445183,
+    "Min": 0.415584,
+    "Max": 0.462295,
+    "Runs": [
+     0.417266,
+     0.445183,
+     0.451178,
+     0.415584,
+     0.462295
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.43772,
+    "Min": 0.42783,
+    "Max": 0.444706,
+    "Runs": [
+     0.42783,
+     0.444706,
+     0.43772,
+     0.43142,
+     0.438201
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 8,
+   "Config": "calamus-2x4",
+   "Wall": {
+    "Median": 0.49243,
+    "Min": 0.465784,
+    "Max": 0.516899,
+    "Runs": [
+     0.465784,
+     0.49982,
+     0.486845,
+     0.49243,
+     0.516899
+    ]
+   },
+   "Throughput": {
+    "Median": 2.03074,
+    "Min": 1.93461,
+    "Max": 2.14692,
+    "Runs": [
+     2.14692,
+     2.00072,
+     2.05404,
+     2.03074,
+     1.93461
+    ]
+   },
+   "CPU": {
+    "Median": 0.448505,
+    "Min": 0.435252,
+    "Max": 0.468013,
+    "Runs": [
+     0.435252,
+     0.448505,
+     0.468013,
+     0.457792,
+     0.445902
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.245377,
+    "Min": 0.232997,
+    "Max": 0.25533,
+    "Runs": [
+     0.232997,
+     0.245377,
+     0.246432,
+     0.242403,
+     0.25533
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 8,
+   "Config": "calamus-4x2",
+   "Wall": {
+    "Median": 0.545348,
+    "Min": 0.535122,
+    "Max": 0.568747,
+    "Runs": [
+     0.568747,
+     0.547436,
+     0.535122,
+     0.545348,
+     0.536042
+    ]
+   },
+   "Throughput": {
+    "Median": 1.83369,
+    "Min": 1.75825,
+    "Max": 1.86873,
+    "Runs": [
+     1.75825,
+     1.8267,
+     1.86873,
+     1.83369,
+     1.86552
+    ]
+   },
+   "CPU": {
+    "Median": 0.454545,
+    "Min": 0.42446,
+    "Max": 0.481728,
+    "Runs": [
+     0.42446,
+     0.481728,
+     0.478114,
+     0.454545,
+     0.42623
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.135392,
+    "Min": 0.134286,
+    "Max": 0.144134,
+    "Runs": [
+     0.144134,
+     0.135352,
+     0.134286,
+     0.135392,
+     0.135412
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 8,
+   "Config": "calamus-8x1",
+   "Wall": {
+    "Median": 0.626013,
+    "Min": 0.619608,
+    "Max": 0.665275,
+    "Runs": [
+     0.665275,
+     0.623187,
+     0.626013,
+     0.659035,
+     0.619608
+    ]
+   },
+   "Throughput": {
+    "Median": 1.59741,
+    "Min": 1.50314,
+    "Max": 1.61392,
+    "Runs": [
+     1.50314,
+     1.60466,
+     1.59741,
+     1.51737,
+     1.61392
+    ]
+   },
+   "CPU": {
+    "Median": 0.441077,
+    "Min": 0.395349,
+    "Max": 0.57554,
+    "Runs": [
+     0.57554,
+     0.395349,
+     0.441077,
+     0.470779,
+     0.439344
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.0801784,
+    "Min": 0.077514,
+    "Max": 0.0848393,
+    "Runs": [
+     0.0848393,
+     0.077514,
+     0.0801784,
+     0.083371,
+     0.0780638
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-16x1",
+   "Wall": {
+    "Median": 0.768136,
+    "Min": 0.703626,
+    "Max": 0.788328,
+    "Runs": [
+     0.720462,
+     0.703626,
+     0.768136,
+     0.781492,
+     0.788328
+    ]
+   },
+   "Throughput": {
+    "Median": 1.30185,
+    "Min": 1.26851,
+    "Max": 1.42121,
+    "Runs": [
+     1.388,
+     1.42121,
+     1.30185,
+     1.2796,
+     1.26851
+    ]
+   },
+   "CPU": {
+    "Median": 0.498507,
+    "Min": 0.466859,
+    "Max": 0.552147,
+    "Runs": [
+     0.471299,
+     0.498507,
+     0.520468,
+     0.466859,
+     0.552147
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.0534249,
+    "Min": 0.0512151,
+    "Max": 0.0580216,
+    "Runs": [
+     0.0546843,
+     0.0512151,
+     0.0512423,
+     0.0580216,
+     0.0534249
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-1x16",
+   "Wall": {
+    "Median": 0.486619,
+    "Min": 0.437755,
+    "Max": 0.643143,
+    "Runs": [
+     0.486619,
+     0.478492,
+     0.437755,
+     0.502801,
+     0.643143
+    ]
+   },
+   "Throughput": {
+    "Median": 2.055,
+    "Min": 1.55486,
+    "Max": 2.28438,
+    "Runs": [
+     2.055,
+     2.0899,
+     2.28438,
+     1.98886,
+     1.55486
+    ]
+   },
+   "CPU": {
+    "Median": 0.447761,
+    "Min": 0.398792,
+    "Max": 0.490798,
+    "Runs": [
+     0.398792,
+     0.447761,
+     0.464912,
+     0.435159,
+     0.490798
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.534534,
+    "Min": 0.447214,
+    "Max": 0.575578,
+    "Runs": [
+     0.534534,
+     0.470368,
+     0.447214,
+     0.545911,
+     0.575578
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-2x8",
+   "Wall": {
+    "Median": 0.520577,
+    "Min": 0.486547,
+    "Max": 0.716067,
+    "Runs": [
+     0.555636,
+     0.486547,
+     0.505754,
+     0.520577,
+     0.716067
+    ]
+   },
+   "Throughput": {
+    "Median": 1.92094,
+    "Min": 1.39652,
+    "Max": 2.0553,
+    "Runs": [
+     1.79974,
+     2.0553,
+     1.97725,
+     1.92094,
+     1.39652
+    ]
+   },
+   "CPU": {
+    "Median": 0.432515,
+    "Min": 0.403509,
+    "Max": 0.456193,
+    "Runs": [
+     0.456193,
+     0.429851,
+     0.403509,
+     0.440922,
+     0.432515
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.27058,
+    "Min": 0.244942,
+    "Max": 0.341742,
+    "Runs": [
+     0.273468,
+     0.244942,
+     0.264956,
+     0.27058,
+     0.341742
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-4x4",
+   "Wall": {
+    "Median": 0.558011,
+    "Min": 0.520059,
+    "Max": 0.695204,
+    "Runs": [
+     0.530917,
+     0.520059,
+     0.695204,
+     0.558011,
+     0.585008
+    ]
+   },
+   "Throughput": {
+    "Median": 1.79208,
+    "Min": 1.43843,
+    "Max": 1.92286,
+    "Runs": [
+     1.88353,
+     1.92286,
+     1.43843,
+     1.79208,
+     1.70938
+    ]
+   },
+   "CPU": {
+    "Median": 0.467836,
+    "Min": 0.404834,
+    "Max": 0.52454,
+    "Runs": [
+     0.404834,
+     0.486567,
+     0.467836,
+     0.463977,
+     0.52454
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.150232,
+    "Min": 0.144499,
+    "Max": 0.166623,
+    "Runs": [
+     0.150232,
+     0.148135,
+     0.166623,
+     0.144499,
+     0.162102
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "photo/large/flower",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-8x2",
+   "Wall": {
+    "Median": 0.598003,
+    "Min": 0.570161,
+    "Max": 0.65895,
+    "Runs": [
+     0.598003,
+     0.570161,
+     0.65895,
+     0.599063,
+     0.592978
+    ]
+   },
+   "Throughput": {
+    "Median": 1.67223,
+    "Min": 1.51757,
+    "Max": 1.75389,
+    "Runs": [
+     1.67223,
+     1.75389,
+     1.51757,
+     1.66927,
+     1.6864
+    ]
+   },
+   "CPU": {
+    "Median": 0.466859,
+    "Min": 0.435673,
+    "Max": 0.564417,
+    "Runs": [
+     0.492447,
+     0.435821,
+     0.435673,
+     0.466859,
+     0.564417
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.0860173,
+    "Min": 0.0799361,
+    "Max": 0.0917959,
+    "Runs": [
+     0.0917959,
+     0.0799361,
+     0.089557,
+     0.0860173,
+     0.0815388
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 1,
+   "Config": "calamus-1x1",
+   "Wall": {
+    "Median": 0.572935,
+    "Min": 0.497775,
+    "Max": 0.656742,
+    "Runs": [
+     0.572935,
+     0.497775,
+     0.656742,
+     0.643002,
+     0.521441
+    ]
+   },
+   "Throughput": {
+    "Median": 1.7454,
+    "Min": 1.52267,
+    "Max": 2.00894,
+    "Runs": [
+     1.7454,
+     2.00894,
+     1.52267,
+     1.5552,
+     1.91776
+    ]
+   },
+   "CPU": {
+    "Median": 0.531915,
+    "Min": 0.478261,
+    "Max": 0.604167,
+    "Runs": [
+     0.531915,
+     0.478261,
+     0.604167,
+     0.54386,
+     0.527273
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.580324,
+    "Min": 0.504713,
+    "Max": 0.684572,
+    "Runs": [
+     0.580324,
+     0.504713,
+     0.684572,
+     0.632455,
+     0.507206
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 2,
+   "Config": "calamus-1x2",
+   "Wall": {
+    "Median": 0.474036,
+    "Min": 0.461041,
+    "Max": 0.531095,
+    "Runs": [
+     0.462432,
+     0.474036,
+     0.461041,
+     0.531095,
+     0.52627
+    ]
+   },
+   "Throughput": {
+    "Median": 2.10954,
+    "Min": 1.8829,
+    "Max": 2.16901,
+    "Runs": [
+     2.16248,
+     2.10954,
+     2.16901,
+     1.8829,
+     1.90016
+    ]
+   },
+   "CPU": {
+    "Median": 0.444444,
+    "Min": 0.425532,
+    "Max": 0.529412,
+    "Runs": [
+     0.425532,
+     0.444444,
+     0.425532,
+     0.52,
+     0.529412
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.466527,
+    "Min": 0.455646,
+    "Max": 0.540714,
+    "Runs": [
+     0.46211,
+     0.466527,
+     0.455646,
+     0.535503,
+     0.540714
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 2,
+   "Config": "calamus-2x1",
+   "Wall": {
+    "Median": 0.530035,
+    "Min": 0.522562,
+    "Max": 0.646264,
+    "Runs": [
+     0.522562,
+     0.524894,
+     0.530035,
+     0.646264,
+     0.629504
+    ]
+   },
+   "Throughput": {
+    "Median": 1.88667,
+    "Min": 1.54736,
+    "Max": 1.91365,
+    "Runs": [
+     1.91365,
+     1.90515,
+     1.88667,
+     1.54736,
+     1.58855
+    ]
+   },
+   "CPU": {
+    "Median": 0.533333,
+    "Min": 0.489362,
+    "Max": 0.66,
+    "Runs": [
+     0.510638,
+     0.533333,
+     0.489362,
+     0.66,
+     0.627451
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.268793,
+    "Min": 0.261707,
+    "Max": 0.322854,
+    "Runs": [
+     0.265652,
+     0.268793,
+     0.261707,
+     0.319659,
+     0.322854
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 4,
+   "Config": "calamus-1x4",
+   "Wall": {
+    "Median": 0.486093,
+    "Min": 0.467214,
+    "Max": 0.545073,
+    "Runs": [
+     0.467214,
+     0.479645,
+     0.505112,
+     0.545073,
+     0.486093
+    ]
+   },
+   "Throughput": {
+    "Median": 2.05722,
+    "Min": 1.83462,
+    "Max": 2.14035,
+    "Runs": [
+     2.14035,
+     2.08487,
+     1.97976,
+     1.83462,
+     2.05722
+    ]
+   },
+   "CPU": {
+    "Median": 0.508621,
+    "Min": 0.447917,
+    "Max": 0.522936,
+    "Runs": [
+     0.447917,
+     0.505155,
+     0.518182,
+     0.522936,
+     0.508621
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.494412,
+    "Min": 0.451957,
+    "Max": 0.5537,
+    "Runs": [
+     0.451957,
+     0.466872,
+     0.494412,
+     0.5537,
+     0.540374
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 4,
+   "Config": "calamus-2x2",
+   "Wall": {
+    "Median": 0.566036,
+    "Min": 0.499181,
+    "Max": 0.68042,
+    "Runs": [
+     0.562817,
+     0.566036,
+     0.499181,
+     0.68042,
+     0.591617
+    ]
+   },
+   "Throughput": {
+    "Median": 1.76667,
+    "Min": 1.46968,
+    "Max": 2.00328,
+    "Runs": [
+     1.77678,
+     1.76667,
+     2.00328,
+     1.46968,
+     1.69028
+    ]
+   },
+   "CPU": {
+    "Median": 0.556701,
+    "Min": 0.463636,
+    "Max": 0.605505,
+    "Runs": [
+     0.489583,
+     0.556701,
+     0.463636,
+     0.605505,
+     0.603448
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.288828,
+    "Min": 0.243388,
+    "Max": 0.34411,
+    "Runs": [
+     0.285393,
+     0.288828,
+     0.243388,
+     0.34411,
+     0.329769
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 4,
+   "Config": "calamus-4x1",
+   "Wall": {
+    "Median": 0.630734,
+    "Min": 0.586388,
+    "Max": 0.714852,
+    "Runs": [
+     0.630734,
+     0.638464,
+     0.586388,
+     0.714852,
+     0.627228
+    ]
+   },
+   "Throughput": {
+    "Median": 1.58545,
+    "Min": 1.39889,
+    "Max": 1.70536,
+    "Runs": [
+     1.58545,
+     1.56626,
+     1.70536,
+     1.39889,
+     1.59432
+    ]
+   },
+   "CPU": {
+    "Median": 0.572917,
+    "Min": 0.494845,
+    "Max": 0.637931,
+    "Runs": [
+     0.572917,
+     0.494845,
+     0.5,
+     0.623853,
+     0.637931
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.163306,
+    "Min": 0.142716,
+    "Max": 0.188159,
+    "Runs": [
+     0.159444,
+     0.163306,
+     0.142716,
+     0.188159,
+     0.177974
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 8,
+   "Config": "calamus-1x8",
+   "Wall": {
+    "Median": 0.541808,
+    "Min": 0.516352,
+    "Max": 0.562903,
+    "Runs": [
+     0.541808,
+     0.516352,
+     0.544202,
+     0.562903,
+     0.533091
+    ]
+   },
+   "Throughput": {
+    "Median": 1.84567,
+    "Min": 1.77651,
+    "Max": 1.93666,
+    "Runs": [
+     1.84567,
+     1.93666,
+     1.83755,
+     1.77651,
+     1.87585
+    ]
+   },
+   "CPU": {
+    "Median": 0.516667,
+    "Min": 0.504132,
+    "Max": 0.568,
+    "Runs": [
+     0.527273,
+     0.513274,
+     0.504132,
+     0.516667,
+     0.568
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.531712,
+    "Min": 0.526486,
+    "Max": 0.562614,
+    "Runs": [
+     0.531712,
+     0.545374,
+     0.530455,
+     0.562614,
+     0.526486
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 8,
+   "Config": "calamus-2x4",
+   "Wall": {
+    "Median": 0.650033,
+    "Min": 0.614188,
+    "Max": 0.746867,
+    "Runs": [
+     0.649198,
+     0.650033,
+     0.614188,
+     0.693038,
+     0.746867
+    ]
+   },
+   "Throughput": {
+    "Median": 1.53838,
+    "Min": 1.33893,
+    "Max": 1.62817,
+    "Runs": [
+     1.54036,
+     1.53838,
+     1.62817,
+     1.44292,
+     1.33893
+    ]
+   },
+   "CPU": {
+    "Median": 0.53719,
+    "Min": 0.445455,
+    "Max": 0.6,
+    "Runs": [
+     0.445455,
+     0.469027,
+     0.53719,
+     0.6,
+     0.576
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.341012,
+    "Min": 0.308734,
+    "Max": 0.368696,
+    "Runs": [
+     0.330334,
+     0.341012,
+     0.308734,
+     0.349941,
+     0.368696
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 8,
+   "Config": "calamus-4x2",
+   "Wall": {
+    "Median": 0.745529,
+    "Min": 0.629527,
+    "Max": 0.772083,
+    "Runs": [
+     0.75502,
+     0.691811,
+     0.629527,
+     0.745529,
+     0.772083
+    ]
+   },
+   "Throughput": {
+    "Median": 1.34133,
+    "Min": 1.2952,
+    "Max": 1.58849,
+    "Runs": [
+     1.32447,
+     1.44548,
+     1.58849,
+     1.34133,
+     1.2952
+    ]
+   },
+   "CPU": {
+    "Median": 0.619469,
+    "Min": 0.53719,
+    "Max": 0.656,
+    "Runs": [
+     0.590909,
+     0.619469,
+     0.53719,
+     0.641667,
+     0.656
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.191028,
+    "Min": 0.158108,
+    "Max": 0.195009,
+    "Runs": [
+     0.193309,
+     0.186115,
+     0.158108,
+     0.191028,
+     0.195009
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 8,
+   "Config": "calamus-8x1",
+   "Wall": {
+    "Median": 1.03897,
+    "Min": 0.970112,
+    "Max": 1.20169,
+    "Runs": [
+     1.03897,
+     1.03223,
+     0.970112,
+     1.17883,
+     1.20169
+    ]
+   },
+   "Throughput": {
+    "Median": 0.962487,
+    "Min": 0.832162,
+    "Max": 1.03081,
+    "Runs": [
+     0.962487,
+     0.968779,
+     1.03081,
+     0.848299,
+     0.832162
+    ]
+   },
+   "CPU": {
+    "Median": 0.469027,
+    "Min": 0.438017,
+    "Max": 0.608333,
+    "Runs": [
+     0.445455,
+     0.469027,
+     0.438017,
+     0.608333,
+     0.56
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.138554,
+    "Min": 0.120351,
+    "Max": 0.154276,
+    "Runs": [
+     0.129994,
+     0.138554,
+     0.120351,
+     0.153659,
+     0.154276
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-16x1",
+   "Wall": {
+    "Median": 1.26957,
+    "Min": 1.19423,
+    "Max": 1.46022,
+    "Runs": [
+     1.46022,
+     1.3079,
+     1.19423,
+     1.19935,
+     1.26957
+    ]
+   },
+   "Throughput": {
+    "Median": 0.787671,
+    "Min": 0.684829,
+    "Max": 0.837357,
+    "Runs": [
+     0.684829,
+     0.764587,
+     0.837357,
+     0.833785,
+     0.787671
+    ]
+   },
+   "CPU": {
+    "Median": 0.478261,
+    "Min": 0.405172,
+    "Max": 0.51938,
+    "Runs": [
+     0.484615,
+     0.478261,
+     0.405172,
+     0.410448,
+     0.51938
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.0987071,
+    "Min": 0.0957983,
+    "Max": 0.11534,
+    "Runs": [
+     0.11534,
+     0.0987071,
+     0.0967349,
+     0.0957983,
+     0.0995234
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-1x16",
+   "Wall": {
+    "Median": 0.545911,
+    "Min": 0.477593,
+    "Max": 0.592351,
+    "Runs": [
+     0.569296,
+     0.528775,
+     0.545911,
+     0.477593,
+     0.592351
+    ]
+   },
+   "Throughput": {
+    "Median": 1.8318,
+    "Min": 1.68819,
+    "Max": 2.09383,
+    "Runs": [
+     1.75656,
+     1.89116,
+     1.8318,
+     2.09383,
+     1.68819
+    ]
+   },
+   "CPU": {
+    "Median": 0.529851,
+    "Min": 0.422414,
+    "Max": 0.607692,
+    "Runs": [
+     0.607692,
+     0.442029,
+     0.422414,
+     0.529851,
+     0.596899
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.57206,
+    "Min": 0.542787,
+    "Max": 0.608188,
+    "Runs": [
+     0.608188,
+     0.57206,
+     0.566432,
+     0.542787,
+     0.576067
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-2x8",
+   "Wall": {
+    "Median": 0.621049,
+    "Min": 0.599034,
+    "Max": 0.677078,
+    "Runs": [
+     0.615034,
+     0.677078,
+     0.671262,
+     0.599034,
+     0.621049
+    ]
+   },
+   "Throughput": {
+    "Median": 1.61018,
+    "Min": 1.47694,
+    "Max": 1.66935,
+    "Runs": [
+     1.62593,
+     1.47694,
+     1.48973,
+     1.66935,
+     1.61018
+    ]
+   },
+   "CPU": {
+    "Median": 0.663793,
+    "Min": 0.511628,
+    "Max": 0.701493,
+    "Runs": [
+     0.592308,
+     0.666667,
+     0.663793,
+     0.701493,
+     0.511628
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.37474,
+    "Min": 0.350277,
+    "Max": 0.401628,
+    "Runs": [
+     0.358014,
+     0.393557,
+     0.401628,
+     0.350277,
+     0.37474
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-4x4",
+   "Wall": {
+    "Median": 0.658553,
+    "Min": 0.646412,
+    "Max": 0.772638,
+    "Runs": [
+     0.772638,
+     0.658553,
+     0.715044,
+     0.65839,
+     0.646412
+    ]
+   },
+   "Throughput": {
+    "Median": 1.51848,
+    "Min": 1.29427,
+    "Max": 1.547,
+    "Runs": [
+     1.29427,
+     1.51848,
+     1.39852,
+     1.51886,
+     1.547
+    ]
+   },
+   "CPU": {
+    "Median": 0.61194,
+    "Min": 0.405797,
+    "Max": 0.643411,
+    "Runs": [
+     0.630769,
+     0.405797,
+     0.517241,
+     0.61194,
+     0.643411
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.199965,
+    "Min": 0.19615,
+    "Max": 0.23899,
+    "Runs": [
+     0.23899,
+     0.19615,
+     0.209496,
+     0.199839,
+     0.199965
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "graphic/medium/p3-color-bars",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-8x2",
+   "Wall": {
+    "Median": 0.885486,
+    "Min": 0.831488,
+    "Max": 0.980709,
+    "Runs": [
+     0.980709,
+     0.90495,
+     0.831488,
+     0.885486,
+     0.854945
+    ]
+   },
+   "Throughput": {
+    "Median": 1.12932,
+    "Min": 1.01967,
+    "Max": 1.20266,
+    "Runs": [
+     1.01967,
+     1.10503,
+     1.20266,
+     1.12932,
+     1.16967
+    ]
+   },
+   "CPU": {
+    "Median": 0.457364,
+    "Min": 0.380597,
+    "Max": 0.586207,
+    "Runs": [
+     0.515385,
+     0.391304,
+     0.586207,
+     0.380597,
+     0.457364
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.138386,
+    "Min": 0.132447,
+    "Max": 0.149523,
+    "Runs": [
+     0.149523,
+     0.142892,
+     0.132447,
+     0.138386,
+     0.136009
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 1,
+   "Config": "calamus-1x1",
+   "Wall": {
+    "Median": 0.862663,
+    "Min": 0.853595,
+    "Max": 0.900325,
+    "Runs": [
+     0.854253,
+     0.853595,
+     0.862663,
+     0.87056,
+     0.900325
+    ]
+   },
+   "Throughput": {
+    "Median": 1.1592,
+    "Min": 1.11071,
+    "Max": 1.17152,
+    "Runs": [
+     1.17061,
+     1.17152,
+     1.1592,
+     1.14869,
+     1.11071
+    ]
+   },
+   "CPU": {
+    "Median": 0.871795,
+    "Min": 0.846154,
+    "Max": 0.894737,
+    "Runs": [
+     0.846154,
+     0.894737,
+     0.871795,
+     0.894737,
+     0.871795
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.859082,
+    "Min": 0.850426,
+    "Max": 0.868932,
+    "Runs": [
+     0.850709,
+     0.850426,
+     0.861972,
+     0.868932,
+     0.859082
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 2,
+   "Config": "calamus-1x2",
+   "Wall": {
+    "Median": 0.881094,
+    "Min": 0.87817,
+    "Max": 0.916549,
+    "Runs": [
+     0.87817,
+     0.916549,
+     0.881094,
+     0.891572,
+     0.878782
+    ]
+   },
+   "Throughput": {
+    "Median": 1.13495,
+    "Min": 1.09105,
+    "Max": 1.13873,
+    "Runs": [
+     1.13873,
+     1.09105,
+     1.13495,
+     1.12161,
+     1.13794
+    ]
+   },
+   "CPU": {
+    "Median": 0.897436,
+    "Min": 0.853659,
+    "Max": 0.921053,
+    "Runs": [
+     0.897436,
+     0.9,
+     0.921053,
+     0.897436,
+     0.853659
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.899373,
+    "Min": 0.870299,
+    "Max": 0.907659,
+    "Runs": [
+     0.873007,
+     0.907659,
+     0.870299,
+     0.899742,
+     0.899373
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 2,
+   "Config": "calamus-2x1",
+   "Wall": {
+    "Median": 0.971071,
+    "Min": 0.949539,
+    "Max": 0.987221,
+    "Runs": [
+     0.97185,
+     0.987221,
+     0.971071,
+     0.955316,
+     0.949539
+    ]
+   },
+   "Throughput": {
+    "Median": 1.02979,
+    "Min": 1.01294,
+    "Max": 1.05314,
+    "Runs": [
+     1.02897,
+     1.01294,
+     1.02979,
+     1.04677,
+     1.05314
+    ]
+   },
+   "CPU": {
+    "Median": 0.897436,
+    "Min": 0.829268,
+    "Max": 0.923077,
+    "Runs": [
+     0.923077,
+     0.875,
+     0.921053,
+     0.897436,
+     0.829268
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.492582,
+    "Min": 0.47829,
+    "Max": 0.497046,
+    "Runs": [
+     0.485914,
+     0.495917,
+     0.497046,
+     0.492582,
+     0.47829
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 4,
+   "Config": "calamus-1x4",
+   "Wall": {
+    "Median": 0.840316,
+    "Min": 0.724972,
+    "Max": 0.869092,
+    "Runs": [
+     0.840316,
+     0.724972,
+     0.791593,
+     0.869092,
+     0.858384
+    ]
+   },
+   "Throughput": {
+    "Median": 1.19003,
+    "Min": 1.15063,
+    "Max": 1.37936,
+    "Runs": [
+     1.19003,
+     1.37936,
+     1.26327,
+     1.15063,
+     1.16498
+    ]
+   },
+   "CPU": {
+    "Median": 0.833333,
+    "Min": 0.672897,
+    "Max": 0.853933,
+    "Runs": [
+     0.853933,
+     0.672897,
+     0.775281,
+     0.833333,
+     0.846154
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.83471,
+    "Min": 0.693223,
+    "Max": 0.873567,
+    "Runs": [
+     0.868579,
+     0.693223,
+     0.797724,
+     0.873567,
+     0.83471
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 4,
+   "Config": "calamus-2x2",
+   "Wall": {
+    "Median": 0.963727,
+    "Min": 0.891961,
+    "Max": 1.1366,
+    "Runs": [
+     0.936531,
+     0.891961,
+     1.1366,
+     1.0014,
+     0.963727
+    ]
+   },
+   "Throughput": {
+    "Median": 1.03764,
+    "Min": 0.879821,
+    "Max": 1.12113,
+    "Runs": [
+     1.06777,
+     1.12113,
+     0.879821,
+     0.9986,
+     1.03764
+    ]
+   },
+   "CPU": {
+    "Median": 0.831461,
+    "Min": 0.738318,
+    "Max": 1.08989,
+    "Runs": [
+     0.831461,
+     0.738318,
+     1.08989,
+     0.928571,
+     0.791209
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.485927,
+    "Min": 0.44455,
+    "Max": 0.580529,
+    "Runs": [
+     0.472905,
+     0.44455,
+     0.580529,
+     0.512364,
+     0.485927
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 4,
+   "Config": "calamus-4x1",
+   "Wall": {
+    "Median": 1.16116,
+    "Min": 1.10643,
+    "Max": 1.20063,
+    "Runs": [
+     1.13646,
+     1.17217,
+     1.16116,
+     1.20063,
+     1.10643
+    ]
+   },
+   "Throughput": {
+    "Median": 0.861205,
+    "Min": 0.832899,
+    "Max": 0.903806,
+    "Runs": [
+     0.879929,
+     0.853122,
+     0.861205,
+     0.832899,
+     0.903806
+    ]
+   },
+   "CPU": {
+    "Median": 0.904762,
+    "Min": 0.808989,
+    "Max": 0.988764,
+    "Runs": [
+     0.808989,
+     0.82243,
+     0.988764,
+     0.904762,
+     0.923077
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.293814,
+    "Min": 0.280599,
+    "Max": 0.311923,
+    "Runs": [
+     0.293814,
+     0.307353,
+     0.2936,
+     0.311923,
+     0.280599
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 8,
+   "Config": "calamus-1x8",
+   "Wall": {
+    "Median": 0.824862,
+    "Min": 0.73273,
+    "Max": 0.95238,
+    "Runs": [
+     0.824862,
+     0.95238,
+     0.73273,
+     0.803372,
+     0.859413
+    ]
+   },
+   "Throughput": {
+    "Median": 1.21232,
+    "Min": 1.05,
+    "Max": 1.36476,
+    "Runs": [
+     1.21232,
+     1.05,
+     1.36476,
+     1.24475,
+     1.16358
+    ]
+   },
+   "CPU": {
+    "Median": 0.807018,
+    "Min": 0.752137,
+    "Max": 0.885965,
+    "Runs": [
+     0.807018,
+     0.823009,
+     0.785235,
+     0.752137,
+     0.885965
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.850384,
+    "Min": 0.809445,
+    "Max": 0.966004,
+    "Runs": [
+     0.812404,
+     0.966004,
+     0.809445,
+     0.850384,
+     0.873454
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 8,
+   "Config": "calamus-2x4",
+   "Wall": {
+    "Median": 0.973383,
+    "Min": 0.658769,
+    "Max": 1.12421,
+    "Runs": [
+     0.973383,
+     1.12421,
+     0.658769,
+     0.852697,
+     1.00488
+    ]
+   },
+   "Throughput": {
+    "Median": 1.02734,
+    "Min": 0.889511,
+    "Max": 1.51798,
+    "Runs": [
+     1.02734,
+     0.889511,
+     1.51798,
+     1.17275,
+     0.995143
+    ]
+   },
+   "CPU": {
+    "Median": 0.833333,
+    "Min": 0.637584,
+    "Max": 0.955752,
+    "Runs": [
+     0.833333,
+     0.955752,
+     0.637584,
+     0.74359,
+     0.885965
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.495093,
+    "Min": 0.379197,
+    "Max": 0.576819,
+    "Runs": [
+     0.495093,
+     0.576819,
+     0.379197,
+     0.45074,
+     0.521384
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 8,
+   "Config": "calamus-4x2",
+   "Wall": {
+    "Median": 1.24041,
+    "Min": 0.855605,
+    "Max": 1.75269,
+    "Runs": [
+     1.24041,
+     1.66005,
+     0.855605,
+     1.75269,
+     1.07516
+    ]
+   },
+   "Throughput": {
+    "Median": 0.806184,
+    "Min": 0.570553,
+    "Max": 1.16876,
+    "Runs": [
+     0.806184,
+     0.602393,
+     1.16876,
+     0.570553,
+     0.930097
+    ]
+   },
+   "CPU": {
+    "Median": 0.940171,
+    "Min": 0.718121,
+    "Max": 1,
+    "Runs": [
+     0.947368,
+     1,
+     0.718121,
+     0.940171,
+     0.745614
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.309864,
+    "Min": 0.240927,
+    "Max": 0.379177,
+    "Runs": [
+     0.309864,
+     0.364002,
+     0.240927,
+     0.379177,
+     0.279679
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 8,
+   "Config": "calamus-8x1",
+   "Wall": {
+    "Median": 1.51891,
+    "Min": 1.01893,
+    "Max": 1.90555,
+    "Runs": [
+     1.90555,
+     1.58892,
+     1.01893,
+     1.51891,
+     1.33191
+    ]
+   },
+   "Throughput": {
+    "Median": 0.658368,
+    "Min": 0.524784,
+    "Max": 0.981425,
+    "Runs": [
+     0.524784,
+     0.62936,
+     0.981425,
+     0.658368,
+     0.750801
+    ]
+   },
+   "CPU": {
+    "Median": 0.894737,
+    "Min": 0.644295,
+    "Max": 0.921053,
+    "Runs": [
+     0.921053,
+     0.920354,
+     0.644295,
+     0.74359,
+     0.894737
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.199523,
+    "Min": 0.136086,
+    "Max": 0.231782,
+    "Runs": [
+     0.231782,
+     0.199523,
+     0.136086,
+     0.201114,
+     0.171377
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-16x1",
+   "Wall": {
+    "Median": 1.44781,
+    "Min": 1.29848,
+    "Max": 1.56651,
+    "Runs": [
+     1.29848,
+     1.44781,
+     1.56651,
+     1.48446,
+     1.36188
+    ]
+   },
+   "Throughput": {
+    "Median": 0.6907,
+    "Min": 0.638363,
+    "Max": 0.770128,
+    "Runs": [
+     0.770128,
+     0.6907,
+     0.638363,
+     0.673645,
+     0.734277
+    ]
+   },
+   "CPU": {
+    "Median": 0.88,
+    "Min": 0.522581,
+    "Max": 0.993289,
+    "Runs": [
+     0.993289,
+     0.88,
+     0.756944,
+     0.522581,
+     0.881944
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.111407,
+    "Min": 0.100088,
+    "Max": 0.114718,
+    "Runs": [
+     0.100088,
+     0.103585,
+     0.114718,
+     0.114481,
+     0.111407
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-1x16",
+   "Wall": {
+    "Median": 0.751601,
+    "Min": 0.724753,
+    "Max": 0.780106,
+    "Runs": [
+     0.735886,
+     0.780106,
+     0.762885,
+     0.751601,
+     0.724753
+    ]
+   },
+   "Throughput": {
+    "Median": 1.33049,
+    "Min": 1.28188,
+    "Max": 1.37978,
+    "Runs": [
+     1.35891,
+     1.28188,
+     1.31081,
+     1.33049,
+     1.37978
+    ]
+   },
+   "CPU": {
+    "Median": 0.76129,
+    "Min": 0.706667,
+    "Max": 0.852349,
+    "Runs": [
+     0.852349,
+     0.706667,
+     0.729167,
+     0.76129,
+     0.777778
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.803016,
+    "Min": 0.766921,
+    "Max": 0.811283,
+    "Runs": [
+     0.799662,
+     0.805948,
+     0.803016,
+     0.811283,
+     0.766921
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-2x8",
+   "Wall": {
+    "Median": 0.873082,
+    "Min": 0.789773,
+    "Max": 0.920831,
+    "Runs": [
+     0.791945,
+     0.886239,
+     0.873082,
+     0.920831,
+     0.789773
+    ]
+   },
+   "Throughput": {
+    "Median": 1.14537,
+    "Min": 1.08598,
+    "Max": 1.26619,
+    "Runs": [
+     1.26271,
+     1.12836,
+     1.14537,
+     1.08598,
+     1.26619
+    ]
+   },
+   "CPU": {
+    "Median": 0.832215,
+    "Min": 0.793333,
+    "Max": 0.958333,
+    "Runs": [
+     0.832215,
+     0.793333,
+     0.958333,
+     0.832258,
+     0.8125
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.485327,
+    "Min": 0.467293,
+    "Max": 0.516279,
+    "Runs": [
+     0.467293,
+     0.485327,
+     0.476437,
+     0.516279,
+     0.492956
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-4x4",
+   "Wall": {
+    "Median": 0.933882,
+    "Min": 0.853984,
+    "Max": 0.964042,
+    "Runs": [
+     0.891391,
+     0.933882,
+     0.964042,
+     0.953518,
+     0.853984
+    ]
+   },
+   "Throughput": {
+    "Median": 1.0708,
+    "Min": 1.0373,
+    "Max": 1.17098,
+    "Runs": [
+     1.12184,
+     1.0708,
+     1.0373,
+     1.04875,
+     1.17098
+    ]
+   },
+   "CPU": {
+    "Median": 0.791946,
+    "Min": 0.666667,
+    "Max": 0.958333,
+    "Runs": [
+     0.791946,
+     0.686667,
+     0.666667,
+     0.812903,
+     0.958333
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.276431,
+    "Min": 0.261029,
+    "Max": 0.284731,
+    "Runs": [
+     0.271519,
+     0.261029,
+     0.281379,
+     0.284731,
+     0.276431
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "document/medium/attention-p3-150dpi",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-8x2",
+   "Wall": {
+    "Median": 1.14184,
+    "Min": 1.03842,
+    "Max": 1.27434,
+    "Runs": [
+     1.03842,
+     1.14184,
+     1.27434,
+     1.20587,
+     1.06043
+    ]
+   },
+   "Throughput": {
+    "Median": 0.87578,
+    "Min": 0.784721,
+    "Max": 0.963002,
+    "Runs": [
+     0.963002,
+     0.87578,
+     0.784721,
+     0.829277,
+     0.943016
+    ]
+   },
+   "CPU": {
+    "Median": 0.793548,
+    "Min": 0.758389,
+    "Max": 1,
+    "Runs": [
+     0.758389,
+     0.846667,
+     0.770833,
+     0.793548,
+     1
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.174669,
+    "Min": 0.162707,
+    "Max": 0.187219,
+    "Runs": [
+     0.163224,
+     0.162707,
+     0.187219,
+     0.185757,
+     0.174669
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 1,
+   "Config": "calamus-1x1",
+   "Wall": {
+    "Median": 0.420432,
+    "Min": 0.378716,
+    "Max": 0.424697,
+    "Runs": [
+     0.424697,
+     0.378716,
+     0.383002,
+     0.420432,
+     0.420973
+    ]
+   },
+   "Throughput": {
+    "Median": 2.3785,
+    "Min": 2.35462,
+    "Max": 2.6405,
+    "Runs": [
+     2.35462,
+     2.6405,
+     2.61095,
+     2.3785,
+     2.37545
+    ]
+   },
+   "CPU": {
+    "Median": 0.4,
+    "Min": 0.363636,
+    "Max": 0.421053,
+    "Runs": [
+     0.421053,
+     0.363636,
+     0.380952,
+     0.4,
+     0.421053
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.41867,
+    "Min": 0.395743,
+    "Max": 0.424,
+    "Runs": [
+     0.424,
+     0.395743,
+     0.396231,
+     0.41867,
+     0.419968
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 2,
+   "Config": "calamus-1x2",
+   "Wall": {
+    "Median": 0.422331,
+    "Min": 0.393329,
+    "Max": 0.441673,
+    "Runs": [
+     0.430105,
+     0.441673,
+     0.413605,
+     0.422331,
+     0.393329
+    ]
+   },
+   "Throughput": {
+    "Median": 2.36781,
+    "Min": 2.26412,
+    "Max": 2.5424,
+    "Runs": [
+     2.32501,
+     2.26412,
+     2.41777,
+     2.36781,
+     2.5424
+    ]
+   },
+   "CPU": {
+    "Median": 0.451613,
+    "Min": 0.387097,
+    "Max": 0.482759,
+    "Runs": [
+     0.466667,
+     0.482759,
+     0.387097,
+     0.4375,
+     0.451613
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.445214,
+    "Min": 0.414458,
+    "Max": 0.455628,
+    "Runs": [
+     0.45529,
+     0.455628,
+     0.414458,
+     0.445214,
+     0.422657
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 2,
+   "Config": "calamus-2x1",
+   "Wall": {
+    "Median": 0.490859,
+    "Min": 0.477417,
+    "Max": 0.51329,
+    "Runs": [
+     0.505257,
+     0.51329,
+     0.477417,
+     0.490859,
+     0.485775
+    ]
+   },
+   "Throughput": {
+    "Median": 2.03724,
+    "Min": 1.94822,
+    "Max": 2.09461,
+    "Runs": [
+     1.97919,
+     1.94822,
+     2.09461,
+     2.03724,
+     2.05857
+    ]
+   },
+   "CPU": {
+    "Median": 0.46875,
+    "Min": 0.387097,
+    "Max": 0.5,
+    "Runs": [
+     0.5,
+     0.482759,
+     0.387097,
+     0.46875,
+     0.419355
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.258781,
+    "Min": 0.24688,
+    "Max": 0.272401,
+    "Runs": [
+     0.258781,
+     0.272401,
+     0.24688,
+     0.262025,
+     0.256293
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 4,
+   "Config": "calamus-1x4",
+   "Wall": {
+    "Median": 0.444496,
+    "Min": 0.412293,
+    "Max": 0.499524,
+    "Runs": [
+     0.42798,
+     0.412293,
+     0.462442,
+     0.444496,
+     0.499524
+    ]
+   },
+   "Throughput": {
+    "Median": 2.24974,
+    "Min": 2.0019,
+    "Max": 2.42546,
+    "Runs": [
+     2.33656,
+     2.42546,
+     2.16243,
+     2.24974,
+     2.0019
+    ]
+   },
+   "CPU": {
+    "Median": 0.389831,
+    "Min": 0.383333,
+    "Max": 0.43662,
+    "Runs": [
+     0.389831,
+     0.389831,
+     0.413793,
+     0.383333,
+     0.43662
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.448727,
+    "Min": 0.408567,
+    "Max": 0.492374,
+    "Runs": [
+     0.448727,
+     0.408567,
+     0.489735,
+     0.429759,
+     0.492374
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 4,
+   "Config": "calamus-2x2",
+   "Wall": {
+    "Median": 0.532208,
+    "Min": 0.473528,
+    "Max": 0.581474,
+    "Runs": [
+     0.521219,
+     0.473528,
+     0.532208,
+     0.552482,
+     0.581474
+    ]
+   },
+   "Throughput": {
+    "Median": 1.87896,
+    "Min": 1.71977,
+    "Max": 2.11181,
+    "Runs": [
+     1.91858,
+     2.11181,
+     1.87896,
+     1.81001,
+     1.71977
+    ]
+   },
+   "CPU": {
+    "Median": 0.491525,
+    "Min": 0.431034,
+    "Max": 0.56338,
+    "Runs": [
+     0.474576,
+     0.491525,
+     0.431034,
+     0.516667,
+     0.56338
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.280706,
+    "Min": 0.235665,
+    "Max": 0.28817,
+    "Runs": [
+     0.280706,
+     0.235665,
+     0.280727,
+     0.275576,
+     0.28817
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 4,
+   "Config": "calamus-4x1",
+   "Wall": {
+    "Median": 0.894196,
+    "Min": 0.801,
+    "Max": 0.937135,
+    "Runs": [
+     0.867297,
+     0.801,
+     0.894196,
+     0.937135,
+     0.93364
+    ]
+   },
+   "Throughput": {
+    "Median": 1.11832,
+    "Min": 1.06708,
+    "Max": 1.24844,
+    "Runs": [
+     1.15301,
+     1.24844,
+     1.11832,
+     1.06708,
+     1.07108
+    ]
+   },
+   "CPU": {
+    "Median": 0.483333,
+    "Min": 0.423729,
+    "Max": 0.492958,
+    "Runs": [
+     0.423729,
+     0.491525,
+     0.465517,
+     0.483333,
+     0.492958
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.235963,
+    "Min": 0.204918,
+    "Max": 0.238291,
+    "Runs": [
+     0.238291,
+     0.204918,
+     0.235963,
+     0.224502,
+     0.236222
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 8,
+   "Config": "calamus-1x8",
+   "Wall": {
+    "Median": 0.515385,
+    "Min": 0.443304,
+    "Max": 0.524896,
+    "Runs": [
+     0.480801,
+     0.443304,
+     0.524896,
+     0.515385,
+     0.524505
+    ]
+   },
+   "Throughput": {
+    "Median": 1.9403,
+    "Min": 1.90514,
+    "Max": 2.25579,
+    "Runs": [
+     2.07986,
+     2.25579,
+     1.90514,
+     1.9403,
+     1.90656
+    ]
+   },
+   "CPU": {
+    "Median": 0.408696,
+    "Min": 0.3125,
+    "Max": 0.453608,
+    "Runs": [
+     0.453608,
+     0.320388,
+     0.3125,
+     0.408696,
+     0.410256
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.503476,
+    "Min": 0.454378,
+    "Max": 0.519685,
+    "Runs": [
+     0.475531,
+     0.454378,
+     0.519685,
+     0.503476,
+     0.516554
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 8,
+   "Config": "calamus-2x4",
+   "Wall": {
+    "Median": 0.598214,
+    "Min": 0.549243,
+    "Max": 0.638787,
+    "Runs": [
+     0.598214,
+     0.549243,
+     0.555116,
+     0.627009,
+     0.638787
+    ]
+   },
+   "Throughput": {
+    "Median": 1.67164,
+    "Min": 1.56547,
+    "Max": 1.82069,
+    "Runs": [
+     1.67164,
+     1.82069,
+     1.80142,
+     1.59487,
+     1.56547
+    ]
+   },
+   "CPU": {
+    "Median": 0.453608,
+    "Min": 0.330435,
+    "Max": 0.514563,
+    "Runs": [
+     0.453608,
+     0.514563,
+     0.364583,
+     0.330435,
+     0.478632
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.302171,
+    "Min": 0.27414,
+    "Max": 0.313196,
+    "Runs": [
+     0.302171,
+     0.290125,
+     0.27414,
+     0.303523,
+     0.313196
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 8,
+   "Config": "calamus-4x2",
+   "Wall": {
+    "Median": 0.856249,
+    "Min": 0.710929,
+    "Max": 1.01494,
+    "Runs": [
+     0.856249,
+     0.775883,
+     0.914987,
+     0.710929,
+     1.01494
+    ]
+   },
+   "Throughput": {
+    "Median": 1.16789,
+    "Min": 0.985278,
+    "Max": 1.40661,
+    "Runs": [
+     1.16789,
+     1.28885,
+     1.09291,
+     1.40661,
+     0.985278
+    ]
+   },
+   "CPU": {
+    "Median": 0.385417,
+    "Min": 0.286957,
+    "Max": 0.402062,
+    "Runs": [
+     0.402062,
+     0.378641,
+     0.385417,
+     0.286957,
+     0.401709
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.210865,
+    "Min": 0.167982,
+    "Max": 0.250195,
+    "Runs": [
+     0.210865,
+     0.204158,
+     0.22643,
+     0.167982,
+     0.250195
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 8,
+   "Config": "calamus-8x1",
+   "Wall": {
+    "Median": 1.49689,
+    "Min": 1.31915,
+    "Max": 1.63558,
+    "Runs": [
+     1.39623,
+     1.31915,
+     1.49689,
+     1.60306,
+     1.63558
+    ]
+   },
+   "Throughput": {
+    "Median": 0.668051,
+    "Min": 0.611402,
+    "Max": 0.758061,
+    "Runs": [
+     0.716215,
+     0.758061,
+     0.668051,
+     0.623808,
+     0.611402
+    ]
+   },
+   "CPU": {
+    "Median": 0.391304,
+    "Min": 0.349515,
+    "Max": 0.412371,
+    "Runs": [
+     0.412371,
+     0.349515,
+     0.364583,
+     0.391304,
+     0.401709
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.186045,
+    "Min": 0.176882,
+    "Max": 0.202275,
+    "Runs": [
+     0.178654,
+     0.176882,
+     0.186045,
+     0.200153,
+     0.202275
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-16x1",
+   "Wall": {
+    "Median": 1.73596,
+    "Min": 1.67223,
+    "Max": 2.27141,
+    "Runs": [
+     1.67223,
+     1.71383,
+     1.73596,
+     2.27141,
+     2.12592
+    ]
+   },
+   "Throughput": {
+    "Median": 0.57605,
+    "Min": 0.440255,
+    "Max": 0.598002,
+    "Runs": [
+     0.598002,
+     0.583488,
+     0.57605,
+     0.440255,
+     0.470384
+    ]
+   },
+   "CPU": {
+    "Median": 0.31405,
+    "Min": 0.246269,
+    "Max": 0.478632,
+    "Runs": [
+     0.31405,
+     0.246269,
+     0.382609,
+     0.310345,
+     0.478632
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.124191,
+    "Min": 0.115985,
+    "Max": 0.158743,
+    "Runs": [
+     0.115985,
+     0.124191,
+     0.119439,
+     0.158743,
+     0.149522
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-1x16",
+   "Wall": {
+    "Median": 0.460021,
+    "Min": 0.427936,
+    "Max": 0.56851,
+    "Runs": [
+     0.454325,
+     0.427936,
+     0.460021,
+     0.56851,
+     0.540835
+    ]
+   },
+   "Throughput": {
+    "Median": 2.17381,
+    "Min": 1.75898,
+    "Max": 2.3368,
+    "Runs": [
+     2.20107,
+     2.3368,
+     2.17381,
+     1.75898,
+     1.84899
+    ]
+   },
+   "CPU": {
+    "Median": 0.396694,
+    "Min": 0.33913,
+    "Max": 0.512821,
+    "Runs": [
+     0.396694,
+     0.470149,
+     0.33913,
+     0.358621,
+     0.512821
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.466781,
+    "Min": 0.443929,
+    "Max": 0.541698,
+    "Runs": [
+     0.444357,
+     0.443929,
+     0.466781,
+     0.541698,
+     0.525336
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-2x8",
+   "Wall": {
+    "Median": 0.530226,
+    "Min": 0.517718,
+    "Max": 0.564736,
+    "Runs": [
+     0.531624,
+     0.52003,
+     0.517718,
+     0.564736,
+     0.530226
+    ]
+   },
+   "Throughput": {
+    "Median": 1.88599,
+    "Min": 1.77074,
+    "Max": 1.93155,
+    "Runs": [
+     1.88103,
+     1.92296,
+     1.93155,
+     1.77074,
+     1.88599
+    ]
+   },
+   "CPU": {
+    "Median": 0.418803,
+    "Min": 0.289256,
+    "Max": 0.53913,
+    "Runs": [
+     0.289256,
+     0.373134,
+     0.53913,
+     0.441379,
+     0.418803
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.281816,
+    "Min": 0.275584,
+    "Max": 0.310324,
+    "Runs": [
+     0.284195,
+     0.28145,
+     0.275584,
+     0.310324,
+     0.281816
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-4x4",
+   "Wall": {
+    "Median": 0.740256,
+    "Min": 0.728473,
+    "Max": 0.872271,
+    "Runs": [
+     0.73051,
+     0.728473,
+     0.740256,
+     0.872271,
+     0.803864
+    ]
+   },
+   "Throughput": {
+    "Median": 1.35088,
+    "Min": 1.14643,
+    "Max": 1.37273,
+    "Runs": [
+     1.36891,
+     1.37273,
+     1.35088,
+     1.14643,
+     1.24399
+    ]
+   },
+   "CPU": {
+    "Median": 0.408696,
+    "Min": 0.38843,
+    "Max": 0.524138,
+    "Runs": [
+     0.38843,
+     0.402985,
+     0.408696,
+     0.524138,
+     0.452991
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.201288,
+    "Min": 0.20013,
+    "Max": 0.232771,
+    "Runs": [
+     0.201288,
+     0.20046,
+     0.20013,
+     0.232771,
+     0.220488
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "diagram/medium/lines-800x500",
+   "Kind": "real",
+   "Budget": 16,
+   "Config": "calamus-8x2",
+   "Wall": {
+    "Median": 1.054,
+    "Min": 0.999001,
+    "Max": 1.39549,
+    "Runs": [
+     1.054,
+     1.02417,
+     0.999001,
+     1.39549,
+     1.27295
+    ]
+   },
+   "Throughput": {
+    "Median": 0.948764,
+    "Min": 0.716592,
+    "Max": 1.001,
+    "Runs": [
+     0.948764,
+     0.976404,
+     1.001,
+     0.716592,
+     0.785576
+    ]
+   },
+   "CPU": {
+    "Median": 0.358621,
+    "Min": 0.321739,
+    "Max": 0.42735,
+    "Runs": [
+     0.371901,
+     0.335821,
+     0.321739,
+     0.358621,
+     0.42735
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.142438,
+    "Min": 0.136271,
+    "Max": 0.197325,
+    "Runs": [
+     0.142438,
+     0.141309,
+     0.136271,
+     0.197325,
+     0.181574
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 1,
+   "Config": "calamus-1x1",
+   "Wall": {
+    "Median": 0.829178,
+    "Min": 0.806078,
+    "Max": 0.874562,
+    "Runs": [
+     0.829178,
+     0.832021,
+     0.874562,
+     0.819959,
+     0.806078
+    ]
+   },
+   "Throughput": {
+    "Median": 1.20601,
+    "Min": 1.14343,
+    "Max": 1.24057,
+    "Runs": [
+     1.20601,
+     1.20189,
+     1.14343,
+     1.21957,
+     1.24057
+    ]
+   },
+   "CPU": {
+    "Median": 0.827586,
+    "Min": 0.807018,
+    "Max": 0.867925,
+    "Runs": [
+     0.867925,
+     0.827586,
+     0.859649,
+     0.824561,
+     0.807018
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.81732,
+    "Min": 0.805877,
+    "Max": 0.843094,
+    "Runs": [
+     0.822712,
+     0.81732,
+     0.843094,
+     0.805877,
+     0.810133
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 2,
+   "Config": "calamus-1x2",
+   "Wall": {
+    "Median": 0.806583,
+    "Min": 0.648187,
+    "Max": 0.880157,
+    "Runs": [
+     0.806583,
+     0.648187,
+     0.817201,
+     0.880157,
+     0.787454
+    ]
+   },
+   "Throughput": {
+    "Median": 1.2398,
+    "Min": 1.13616,
+    "Max": 1.54277,
+    "Runs": [
+     1.2398,
+     1.54277,
+     1.22369,
+     1.13616,
+     1.26992
+    ]
+   },
+   "CPU": {
+    "Median": 0.787879,
+    "Min": 0.628571,
+    "Max": 0.857143,
+    "Runs": [
+     0.827586,
+     0.628571,
+     0.787879,
+     0.857143,
+     0.787879
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.796892,
+    "Min": 0.627842,
+    "Max": 0.862822,
+    "Runs": [
+     0.832537,
+     0.627842,
+     0.796892,
+     0.862822,
+     0.796168
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 2,
+   "Config": "calamus-2x1",
+   "Wall": {
+    "Median": 0.890655,
+    "Min": 0.810693,
+    "Max": 0.99416,
+    "Runs": [
+     0.877599,
+     0.810693,
+     0.890655,
+     0.99416,
+     0.896299
+    ]
+   },
+   "Throughput": {
+    "Median": 1.12277,
+    "Min": 1.00587,
+    "Max": 1.23351,
+    "Runs": [
+     1.13947,
+     1.23351,
+     1.12277,
+     1.00587,
+     1.1157
+    ]
+   },
+   "CPU": {
+    "Median": 0.844828,
+    "Min": 0.757143,
+    "Max": 0.936508,
+    "Runs": [
+     0.844828,
+     0.757143,
+     0.848485,
+     0.936508,
+     0.833333
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.447688,
+    "Min": 0.420578,
+    "Max": 0.510768,
+    "Runs": [
+     0.451457,
+     0.420578,
+     0.435898,
+     0.510768,
+     0.447688
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 4,
+   "Config": "calamus-1x4",
+   "Wall": {
+    "Median": 0.825811,
+    "Min": 0.795173,
+    "Max": 0.8459,
+    "Runs": [
+     0.795173,
+     0.819463,
+     0.832377,
+     0.825811,
+     0.8459
+    ]
+   },
+   "Throughput": {
+    "Median": 1.21093,
+    "Min": 1.18217,
+    "Max": 1.25759,
+    "Runs": [
+     1.25759,
+     1.22031,
+     1.20138,
+     1.21093,
+     1.18217
+    ]
+   },
+   "CPU": {
+    "Median": 0.816901,
+    "Min": 0.802632,
+    "Max": 0.852459,
+    "Runs": [
+     0.852459,
+     0.827586,
+     0.802632,
+     0.816901,
+     0.811594
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.814528,
+    "Min": 0.811126,
+    "Max": 0.841254,
+    "Runs": [
+     0.812249,
+     0.841254,
+     0.814528,
+     0.811126,
+     0.833177
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 4,
+   "Config": "calamus-2x2",
+   "Wall": {
+    "Median": 0.892391,
+    "Min": 0.707496,
+    "Max": 0.974234,
+    "Runs": [
+     0.836172,
+     0.892391,
+     0.707496,
+     0.931725,
+     0.974234
+    ]
+   },
+   "Throughput": {
+    "Median": 1.12058,
+    "Min": 1.02645,
+    "Max": 1.41344,
+    "Runs": [
+     1.19593,
+     1.12058,
+     1.41344,
+     1.07328,
+     1.02645
+    ]
+   },
+   "CPU": {
+    "Median": 0.859155,
+    "Min": 0.605263,
+    "Max": 0.942029,
+    "Runs": [
+     0.819672,
+     0.87931,
+     0.605263,
+     0.859155,
+     0.942029
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.46657,
+    "Min": 0.359709,
+    "Max": 0.473732,
+    "Runs": [
+     0.423929,
+     0.46657,
+     0.359709,
+     0.471305,
+     0.473732
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 4,
+   "Config": "calamus-4x1",
+   "Wall": {
+    "Median": 1.11193,
+    "Min": 0.974213,
+    "Max": 1.21551,
+    "Runs": [
+     0.974213,
+     1.15671,
+     1.21551,
+     1.07791,
+     1.11193
+    ]
+   },
+   "Throughput": {
+    "Median": 0.899341,
+    "Min": 0.822698,
+    "Max": 1.02647,
+    "Runs": [
+     1.02647,
+     0.864522,
+     0.822698,
+     0.927721,
+     0.899341
+    ]
+   },
+   "CPU": {
+    "Median": 0.84058,
+    "Min": 0.815789,
+    "Max": 0.931034,
+    "Runs": [
+     0.819672,
+     0.931034,
+     0.815789,
+     0.929577,
+     0.84058
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.277887,
+    "Min": 0.248389,
+    "Max": 0.310993,
+    "Runs": [
+     0.248389,
+     0.310993,
+     0.279956,
+     0.271358,
+     0.277887
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 8,
+   "Config": "calamus-1x8",
+   "Wall": {
+    "Median": 0.853453,
+    "Min": 0.787839,
+    "Max": 0.865945,
+    "Runs": [
+     0.851081,
+     0.787839,
+     0.853453,
+     0.856621,
+     0.865945
+    ]
+   },
+   "Throughput": {
+    "Median": 1.17171,
+    "Min": 1.15481,
+    "Max": 1.26929,
+    "Runs": [
+     1.17498,
+     1.26929,
+     1.17171,
+     1.16738,
+     1.15481
+    ]
+   },
+   "CPU": {
+    "Median": 0.786164,
+    "Min": 0.765823,
+    "Max": 0.828571,
+    "Runs": [
+     0.828571,
+     0.765823,
+     0.777778,
+     0.81761,
+     0.786164
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.862935,
+    "Min": 0.775659,
+    "Max": 0.872813,
+    "Runs": [
+     0.864235,
+     0.775659,
+     0.872813,
+     0.840727,
+     0.862935
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 8,
+   "Config": "calamus-2x4",
+   "Wall": {
+    "Median": 0.94564,
+    "Min": 0.860177,
+    "Max": 1.01594,
+    "Runs": [
+     0.91441,
+     0.860177,
+     1.0157,
+     0.94564,
+     1.01594
+    ]
+   },
+   "Throughput": {
+    "Median": 1.05749,
+    "Min": 0.984306,
+    "Max": 1.16255,
+    "Runs": [
+     1.0936,
+     1.16255,
+     0.984539,
+     1.05749,
+     0.984306
+    ]
+   },
+   "CPU": {
+    "Median": 0.855346,
+    "Min": 0.803797,
+    "Max": 0.937107,
+    "Runs": [
+     0.85,
+     0.803797,
+     0.934641,
+     0.855346,
+     0.937107
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.481838,
+    "Min": 0.429994,
+    "Max": 0.511985,
+    "Runs": [
+     0.476925,
+     0.429994,
+     0.503391,
+     0.481838,
+     0.511985
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 8,
+   "Config": "calamus-4x2",
+   "Wall": {
+    "Median": 1.12222,
+    "Min": 1.03727,
+    "Max": 1.19405,
+    "Runs": [
+     1.09186,
+     1.03727,
+     1.19405,
+     1.12222,
+     1.12939
+    ]
+   },
+   "Throughput": {
+    "Median": 0.891093,
+    "Min": 0.837487,
+    "Max": 0.96407,
+    "Runs": [
+     0.915868,
+     0.96407,
+     0.837487,
+     0.891093,
+     0.885435
+    ]
+   },
+   "CPU": {
+    "Median": 0.871429,
+    "Min": 0.861635,
+    "Max": 0.924528,
+    "Runs": [
+     0.871429,
+     0.886076,
+     0.869281,
+     0.861635,
+     0.924528
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.285041,
+    "Min": 0.26655,
+    "Max": 0.29381,
+    "Runs": [
+     0.283916,
+     0.26655,
+     0.29381,
+     0.285041,
+     0.289097
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 8,
+   "Config": "calamus-8x1",
+   "Wall": {
+    "Median": 1.42284,
+    "Min": 1.30854,
+    "Max": 1.45244,
+    "Runs": [
+     1.30854,
+     1.43724,
+     1.42284,
+     1.41107,
+     1.45244
+    ]
+   },
+   "Throughput": {
+    "Median": 0.702818,
+    "Min": 0.688496,
+    "Max": 0.764208,
+    "Runs": [
+     0.764208,
+     0.695778,
+     0.702818,
+     0.708683,
+     0.688496
+    ]
+   },
+   "CPU": {
+    "Median": 0.892857,
+    "Min": 0.805031,
+    "Max": 1.02516,
+    "Runs": [
+     0.892857,
+     0.841772,
+     0.928105,
+     1.02516,
+     0.805031
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.186154,
+    "Min": 0.168805,
+    "Max": 0.188648,
+    "Runs": [
+     0.168805,
+     0.188648,
+     0.186154,
+     0.182214,
+     0.18745
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 16,
+   "Config": "calamus-16x1",
+   "Wall": {
+    "Median": 1.48484,
+    "Min": 1.15595,
+    "Max": 1.49696,
+    "Runs": [
+     1.3752,
+     1.49696,
+     1.48831,
+     1.48484,
+     1.15595
+    ]
+   },
+   "Throughput": {
+    "Median": 0.673474,
+    "Min": 0.668023,
+    "Max": 0.86509,
+    "Runs": [
+     0.727168,
+     0.668023,
+     0.671903,
+     0.673474,
+     0.86509
+    ]
+   },
+   "CPU": {
+    "Median": 1.01242,
+    "Min": 0.850267,
+    "Max": 1.11801,
+    "Runs": [
+     0.913793,
+     1.05729,
+     1.11801,
+     0.850267,
+     1.01242
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.0987,
+    "Min": 0.0870183,
+    "Max": 0.106077,
+    "Runs": [
+     0.0963431,
+     0.0987,
+     0.100076,
+     0.106077,
+     0.0870183
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 16,
+   "Config": "calamus-1x16",
+   "Wall": {
+    "Median": 0.853538,
+    "Min": 0.790949,
+    "Max": 0.87082,
+    "Runs": [
+     0.84107,
+     0.866521,
+     0.87082,
+     0.853538,
+     0.790949
+    ]
+   },
+   "Throughput": {
+    "Median": 1.17159,
+    "Min": 1.14834,
+    "Max": 1.2643,
+    "Runs": [
+     1.18896,
+     1.15404,
+     1.14834,
+     1.17159,
+     1.2643
+    ]
+   },
+   "CPU": {
+    "Median": 0.838509,
+    "Min": 0.770053,
+    "Max": 0.950311,
+    "Runs": [
+     0.862069,
+     0.791667,
+     0.838509,
+     0.770053,
+     0.950311
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.819706,
+    "Min": 0.730784,
+    "Max": 0.848103,
+    "Runs": [
+     0.848103,
+     0.77805,
+     0.819706,
+     0.842444,
+     0.730784
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 16,
+   "Config": "calamus-2x8",
+   "Wall": {
+    "Median": 0.916078,
+    "Min": 0.776044,
+    "Max": 0.982437,
+    "Runs": [
+     0.919557,
+     0.846672,
+     0.982437,
+     0.916078,
+     0.776044
+    ]
+   },
+   "Throughput": {
+    "Median": 1.09161,
+    "Min": 1.01788,
+    "Max": 1.28859,
+    "Runs": [
+     1.08748,
+     1.1811,
+     1.01788,
+     1.09161,
+     1.28859
+    ]
+   },
+   "CPU": {
+    "Median": 0.796791,
+    "Min": 0.75,
+    "Max": 1,
+    "Runs": [
+     0.758621,
+     0.75,
+     1,
+     0.796791,
+     0.913043
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.473367,
+    "Min": 0.431592,
+    "Max": 0.484471,
+    "Runs": [
+     0.484471,
+     0.441742,
+     0.473367,
+     0.479361,
+     0.431592
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 16,
+   "Config": "calamus-4x4",
+   "Wall": {
+    "Median": 1.0399,
+    "Min": 0.876115,
+    "Max": 1.08988,
+    "Runs": [
+     1.0399,
+     0.964538,
+     1.08988,
+     1.08223,
+     0.876115
+    ]
+   },
+   "Throughput": {
+    "Median": 0.96163,
+    "Min": 0.917536,
+    "Max": 1.1414,
+    "Runs": [
+     0.96163,
+     1.03677,
+     0.917536,
+     0.924019,
+     1.1414
+    ]
+   },
+   "CPU": {
+    "Median": 0.901042,
+    "Min": 0.748663,
+    "Max": 1.09317,
+    "Runs": [
+     0.787356,
+     0.901042,
+     1.09317,
+     0.748663,
+     1.06211
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.281058,
+    "Min": 0.257371,
+    "Max": 0.299389,
+    "Runs": [
+     0.285056,
+     0.262539,
+     0.281058,
+     0.299389,
+     0.257371
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/page-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 16,
+   "Config": "calamus-8x2",
+   "Wall": {
+    "Median": 1.22456,
+    "Min": 0.951781,
+    "Max": 1.33218,
+    "Runs": [
+     1.19191,
+     1.22456,
+     1.33115,
+     1.33218,
+     0.951781
+    ]
+   },
+   "Throughput": {
+    "Median": 0.816619,
+    "Min": 0.750652,
+    "Max": 1.05066,
+    "Runs": [
+     0.838993,
+     0.816619,
+     0.751232,
+     0.750652,
+     1.05066
+    ]
+   },
+   "CPU": {
+    "Median": 0.902299,
+    "Min": 0.786458,
+    "Max": 1.15528,
+    "Runs": [
+     0.902299,
+     0.786458,
+     1.15528,
+     0.791444,
+     1.06832
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.170467,
+    "Min": 0.144128,
+    "Max": 0.186485,
+    "Runs": [
+     0.170467,
+     0.166633,
+     0.178863,
+     0.186485,
+     0.144128
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 1,
+   "Config": "calamus-1x1",
+   "Wall": {
+    "Median": 0.254061,
+    "Min": 0.238779,
+    "Max": 0.301954,
+    "Runs": [
+     0.254061,
+     0.238779,
+     0.248312,
+     0.25991,
+     0.301954
+    ]
+   },
+   "Throughput": {
+    "Median": 3.93607,
+    "Min": 3.31176,
+    "Max": 4.18798,
+    "Runs": [
+     3.93607,
+     4.18798,
+     4.02719,
+     3.84748,
+     3.31176
+    ]
+   },
+   "CPU": {
+    "Median": 0.247573,
+    "Min": 0.244019,
+    "Max": 0.299517,
+    "Runs": [
+     0.246305,
+     0.244019,
+     0.247573,
+     0.262376,
+     0.299517
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.253296,
+    "Min": 0.238754,
+    "Max": 0.299416,
+    "Runs": [
+     0.25909,
+     0.238754,
+     0.246552,
+     0.253296,
+     0.299416
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 2,
+   "Config": "calamus-1x2",
+   "Wall": {
+    "Median": 0.258558,
+    "Min": 0.204084,
+    "Max": 0.286324,
+    "Runs": [
+     0.286324,
+     0.261276,
+     0.204084,
+     0.258558,
+     0.204985
+    ]
+   },
+   "Throughput": {
+    "Median": 3.8676,
+    "Min": 3.49254,
+    "Max": 4.89995,
+    "Runs": [
+     3.49254,
+     3.82736,
+     4.89995,
+     3.8676,
+     4.87841
+    ]
+   },
+   "CPU": {
+    "Median": 0.239583,
+    "Min": 0.20202,
+    "Max": 0.2657,
+    "Runs": [
+     0.2657,
+     0.25,
+     0.210526,
+     0.239583,
+     0.20202
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.240463,
+    "Min": 0.19947,
+    "Max": 0.282138,
+    "Runs": [
+     0.282138,
+     0.240463,
+     0.19947,
+     0.245003,
+     0.203581
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 2,
+   "Config": "calamus-2x1",
+   "Wall": {
+    "Median": 0.326021,
+    "Min": 0.26038,
+    "Max": 0.343422,
+    "Runs": [
+     0.342379,
+     0.326021,
+     0.343422,
+     0.3243,
+     0.26038
+    ]
+   },
+   "Throughput": {
+    "Median": 3.06729,
+    "Min": 2.91187,
+    "Max": 3.84055,
+    "Runs": [
+     2.92074,
+     3.06729,
+     2.91187,
+     3.08357,
+     3.84055
+    ]
+   },
+   "CPU": {
+    "Median": 0.3125,
+    "Min": 0.237374,
+    "Max": 0.344498,
+    "Runs": [
+     0.318841,
+     0.301887,
+     0.344498,
+     0.3125,
+     0.237374
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.161955,
+    "Min": 0.129465,
+    "Max": 0.175892,
+    "Runs": [
+     0.175892,
+     0.161955,
+     0.172673,
+     0.147758,
+     0.129465
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 4,
+   "Config": "calamus-1x4",
+   "Wall": {
+    "Median": 0.2357,
+    "Min": 0.227277,
+    "Max": 0.270549,
+    "Runs": [
+     0.242214,
+     0.270549,
+     0.2357,
+     0.227277,
+     0.230869
+    ]
+   },
+   "Throughput": {
+    "Median": 4.24267,
+    "Min": 3.69619,
+    "Max": 4.39992,
+    "Runs": [
+     4.12858,
+     3.69619,
+     4.24267,
+     4.39992,
+     4.33145
+    ]
+   },
+   "CPU": {
+    "Median": 0.22335,
+    "Min": 0.213592,
+    "Max": 0.269608,
+    "Runs": [
+     0.213592,
+     0.269608,
+     0.22449,
+     0.22335,
+     0.221675
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.227705,
+    "Min": 0.221187,
+    "Max": 0.274973,
+    "Runs": [
+     0.238561,
+     0.274973,
+     0.227705,
+     0.221668,
+     0.221187
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 4,
+   "Config": "calamus-2x2",
+   "Wall": {
+    "Median": 0.284844,
+    "Min": 0.278775,
+    "Max": 0.295174,
+    "Runs": [
+     0.295174,
+     0.284844,
+     0.288339,
+     0.279221,
+     0.278775
+    ]
+   },
+   "Throughput": {
+    "Median": 3.51069,
+    "Min": 3.38784,
+    "Max": 3.58713,
+    "Runs": [
+     3.38784,
+     3.51069,
+     3.46814,
+     3.5814,
+     3.58713
+    ]
+   },
+   "CPU": {
+    "Median": 0.259804,
+    "Min": 0.236453,
+    "Max": 0.284264,
+    "Runs": [
+     0.257282,
+     0.259804,
+     0.260204,
+     0.284264,
+     0.236453
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.141032,
+    "Min": 0.136291,
+    "Max": 0.145943,
+    "Runs": [
+     0.143453,
+     0.141032,
+     0.145943,
+     0.13749,
+     0.136291
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 4,
+   "Config": "calamus-4x1",
+   "Wall": {
+    "Median": 0.330687,
+    "Min": 0.327657,
+    "Max": 0.354511,
+    "Runs": [
+     0.354511,
+     0.327657,
+     0.344073,
+     0.330687,
+     0.328252
+    ]
+   },
+   "Throughput": {
+    "Median": 3.02401,
+    "Min": 2.82079,
+    "Max": 3.05197,
+    "Runs": [
+     2.82079,
+     3.05197,
+     2.90636,
+     3.02401,
+     3.04644
+    ]
+   },
+   "CPU": {
+    "Median": 0.31068,
+    "Min": 0.280788,
+    "Max": 0.326531,
+    "Runs": [
+     0.31068,
+     0.318627,
+     0.326531,
+     0.284264,
+     0.280788
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.0832278,
+    "Min": 0.0830295,
+    "Max": 0.0843049,
+    "Runs": [
+     0.0843049,
+     0.0830295,
+     0.0833951,
+     0.0832278,
+     0.083063
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 8,
+   "Config": "calamus-1x8",
+   "Wall": {
+    "Median": 0.275436,
+    "Min": 0.267194,
+    "Max": 0.291893,
+    "Runs": [
+     0.291893,
+     0.275046,
+     0.281039,
+     0.267194,
+     0.275436
+    ]
+   },
+   "Throughput": {
+    "Median": 3.63061,
+    "Min": 3.42591,
+    "Max": 3.7426,
+    "Runs": [
+     3.42591,
+     3.63576,
+     3.55823,
+     3.7426,
+     3.63061
+    ]
+   },
+   "CPU": {
+    "Median": 0.25,
+    "Min": 0.235556,
+    "Max": 0.275229,
+    "Runs": [
+     0.275229,
+     0.25,
+     0.257778,
+     0.235556,
+     0.247619
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.278404,
+    "Min": 0.247999,
+    "Max": 0.283518,
+    "Runs": [
+     0.278404,
+     0.283518,
+     0.280071,
+     0.265315,
+     0.247999
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 8,
+   "Config": "calamus-2x4",
+   "Wall": {
+    "Median": 0.360794,
+    "Min": 0.351588,
+    "Max": 0.369688,
+    "Runs": [
+     0.363102,
+     0.351588,
+     0.360794,
+     0.369688,
+     0.359791
+    ]
+   },
+   "Throughput": {
+    "Median": 2.77166,
+    "Min": 2.70499,
+    "Max": 2.84424,
+    "Runs": [
+     2.75404,
+     2.84424,
+     2.77166,
+     2.70499,
+     2.77939
+    ]
+   },
+   "CPU": {
+    "Median": 0.3,
+    "Min": 0.288889,
+    "Max": 0.334862,
+    "Runs": [
+     0.334862,
+     0.315789,
+     0.288889,
+     0.297778,
+     0.3
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.177029,
+    "Min": 0.168124,
+    "Max": 0.185559,
+    "Runs": [
+     0.185559,
+     0.173647,
+     0.168124,
+     0.177337,
+     0.177029
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 8,
+   "Config": "calamus-4x2",
+   "Wall": {
+    "Median": 0.428588,
+    "Min": 0.415529,
+    "Max": 0.459463,
+    "Runs": [
+     0.456309,
+     0.428588,
+     0.424975,
+     0.415529,
+     0.459463
+    ]
+   },
+   "Throughput": {
+    "Median": 2.33324,
+    "Min": 2.17645,
+    "Max": 2.40657,
+    "Runs": [
+     2.1915,
+     2.33324,
+     2.35308,
+     2.40657,
+     2.17645
+    ]
+   },
+   "CPU": {
+    "Median": 0.350877,
+    "Min": 0.288889,
+    "Max": 0.447619,
+    "Runs": [
+     0.362385,
+     0.350877,
+     0.288889,
+     0.315556,
+     0.447619
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.109858,
+    "Min": 0.101494,
+    "Max": 0.11736,
+    "Runs": [
+     0.11736,
+     0.109858,
+     0.101494,
+     0.103089,
+     0.117192
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 8,
+   "Config": "calamus-8x1",
+   "Wall": {
+    "Median": 0.538022,
+    "Min": 0.508381,
+    "Max": 0.554396,
+    "Runs": [
+     0.508381,
+     0.526457,
+     0.554396,
+     0.538022,
+     0.545364
+    ]
+   },
+   "Throughput": {
+    "Median": 1.85866,
+    "Min": 1.80377,
+    "Max": 1.96703,
+    "Runs": [
+     1.96703,
+     1.89949,
+     1.80377,
+     1.85866,
+     1.83364
+    ]
+   },
+   "CPU": {
+    "Median": 0.366972,
+    "Min": 0.28,
+    "Max": 0.428571,
+    "Runs": [
+     0.366972,
+     0.390351,
+     0.28,
+     0.32,
+     0.428571
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.0685728,
+    "Min": 0.0643085,
+    "Max": 0.070373,
+    "Runs": [
+     0.0643085,
+     0.0685728,
+     0.070373,
+     0.0678058,
+     0.0702423
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 16,
+   "Config": "calamus-16x1",
+   "Wall": {
+    "Median": 0.771515,
+    "Min": 0.515593,
+    "Max": 1.01716,
+    "Runs": [
+     0.771515,
+     1.01716,
+     0.725775,
+     0.515593,
+     0.85548
+    ]
+   },
+   "Throughput": {
+    "Median": 1.29615,
+    "Min": 0.983131,
+    "Max": 1.93951,
+    "Runs": [
+     1.29615,
+     0.983131,
+     1.37784,
+     1.93951,
+     1.16893
+    ]
+   },
+   "CPU": {
+    "Median": 0.362595,
+    "Min": 0.32,
+    "Max": 0.591093,
+    "Runs": [
+     0.362595,
+     0.350806,
+     0.591093,
+     0.32,
+     0.42126
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.0564854,
+    "Min": 0.0393296,
+    "Max": 0.0640515,
+    "Runs": [
+     0.0564854,
+     0.0640515,
+     0.0487701,
+     0.0393296,
+     0.0625008
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 16,
+   "Config": "calamus-1x16",
+   "Wall": {
+    "Median": 0.402301,
+    "Min": 0.378262,
+    "Max": 0.437836,
+    "Runs": [
+     0.437836,
+     0.400644,
+     0.42303,
+     0.378262,
+     0.402301
+    ]
+   },
+   "Throughput": {
+    "Median": 2.4857,
+    "Min": 2.28396,
+    "Max": 2.64367,
+    "Runs": [
+     2.28396,
+     2.49598,
+     2.3639,
+     2.64367,
+     2.4857
+    ]
+   },
+   "CPU": {
+    "Median": 0.34252,
+    "Min": 0.274809,
+    "Max": 0.348178,
+    "Runs": [
+     0.274809,
+     0.342742,
+     0.348178,
+     0.32,
+     0.34252
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.405792,
+    "Min": 0.345733,
+    "Max": 0.427693,
+    "Runs": [
+     0.41373,
+     0.427693,
+     0.405558,
+     0.345733,
+     0.405792
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 16,
+   "Config": "calamus-2x8",
+   "Wall": {
+    "Median": 0.490853,
+    "Min": 0.416323,
+    "Max": 0.551899,
+    "Runs": [
+     0.508046,
+     0.476082,
+     0.490853,
+     0.416323,
+     0.551899
+    ]
+   },
+   "Throughput": {
+    "Median": 2.03727,
+    "Min": 1.81192,
+    "Max": 2.40198,
+    "Runs": [
+     1.96832,
+     2.10048,
+     2.03727,
+     2.40198,
+     1.81192
+    ]
+   },
+   "CPU": {
+    "Median": 0.42915,
+    "Min": 0.328,
+    "Max": 0.439516,
+    "Runs": [
+     0.381679,
+     0.439516,
+     0.42915,
+     0.328,
+     0.437008
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.262513,
+    "Min": 0.216931,
+    "Max": 0.302219,
+    "Runs": [
+     0.299301,
+     0.262513,
+     0.25113,
+     0.216931,
+     0.302219
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 16,
+   "Config": "calamus-4x4",
+   "Wall": {
+    "Median": 0.562904,
+    "Min": 0.402542,
+    "Max": 0.663506,
+    "Runs": [
+     0.570356,
+     0.663506,
+     0.547354,
+     0.402542,
+     0.562904
+    ]
+   },
+   "Throughput": {
+    "Median": 1.7765,
+    "Min": 1.50715,
+    "Max": 2.48421,
+    "Runs": [
+     1.75329,
+     1.50715,
+     1.82697,
+     2.48421,
+     1.7765
+    ]
+   },
+   "CPU": {
+    "Median": 0.448819,
+    "Min": 0.408397,
+    "Max": 0.476,
+    "Runs": [
+     0.408397,
+     0.447581,
+     0.465587,
+     0.476,
+     0.448819
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.159868,
+    "Min": 0.118915,
+    "Max": 0.189806,
+    "Runs": [
+     0.159868,
+     0.189806,
+     0.147958,
+     0.118915,
+     0.163917
+    ]
+   }
+  },
+  {
+   "Format": "png-fast",
+   "Fixture": "synthetic/medium/noise-1240x1754",
+   "Kind": "synthetic",
+   "Budget": 16,
+   "Config": "calamus-8x2",
+   "Wall": {
+    "Median": 0.678067,
+    "Min": 0.467148,
+    "Max": 0.725454,
+    "Runs": [
+     0.678067,
+     0.70641,
+     0.648139,
+     0.467148,
+     0.725454
+    ]
+   },
+   "Throughput": {
+    "Median": 1.47478,
+    "Min": 1.37845,
+    "Max": 2.14065,
+    "Runs": [
+     1.47478,
+     1.41561,
+     1.54288,
+     2.14065,
+     1.37845
+    ]
+   },
+   "CPU": {
+    "Median": 0.473684,
+    "Min": 0.332061,
+    "Max": 0.584,
+    "Runs": [
+     0.332061,
+     0.5,
+     0.473684,
+     0.584,
+     0.374016
+    ]
+   },
+   "ImageLatency": {
+    "Median": 0.0991298,
+    "Min": 0.0695967,
+    "Max": 0.105594,
+    "Runs": [
+     0.0991298,
+     0.105594,
+     0.0861627,
+     0.0695967,
+     0.103229
+    ]
+   }
+  }
+ ],
+ "Memory": null,
+ "Animations": null
+}
