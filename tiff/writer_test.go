@@ -18,7 +18,7 @@ func testImages(r *rand.Rand, w, h int) map[string]image.Image {
 	ms := map[string]image.Image{
 		"rgba": image.NewRGBA(rect), "nrgba": image.NewNRGBA(rect), "gray": image.NewGray(rect),
 		"gray16": image.NewGray16(rect), "rgba64": image.NewRGBA64(rect), "nrgba64": image.NewNRGBA64(rect),
-		"cmyk-generic": image.NewCMYK(rect),
+		"cmyk": image.NewCMYK(rect),
 	}
 	pal := make(color.Palette, 200)
 	for i := range pal {
@@ -55,6 +55,11 @@ func roundTrip(t testing.TB, m image.Image, enc Encoder) {
 	if err := enc.Encode(&buf, m); err != nil {
 		t.Fatal(err)
 	}
+	if c, ok := m.(*image.CMYK); ok {
+		// x/image/tiff reads no separated samples.
+		checkCMYK(t, buf.Bytes(), c)
+		return
+	}
 	got, err := xtiff.Decode(bytes.NewReader(buf.Bytes()))
 	if err != nil {
 		t.Fatal(err)
@@ -63,13 +68,9 @@ func roundTrip(t testing.TB, m image.Image, enc Encoder) {
 	if got.Bounds().Size() != b.Size() {
 		t.Fatalf("size %v, want %v", got.Bounds().Size(), b.Size())
 	}
-	_, generic := m.(*image.CMYK)
 	for y := 0; y < b.Dy(); y++ {
 		for x := 0; x < b.Dx(); x++ {
 			want := m.At(b.Min.X+x, b.Min.Y+y)
-			if generic {
-				want = color.RGBAModel.Convert(want)
-			}
 			gc := got.At(got.Bounds().Min.X+x, got.Bounds().Min.Y+y)
 			r1, g1, b1, a1 := want.RGBA()
 			r2, g2, b2, a2 := gc.RGBA()
@@ -127,7 +128,7 @@ func FuzzRoundTrip(f *testing.F) {
 	f.Fuzz(func(t *testing.T, w, h uint16, kind, comp uint8, pred bool, workers uint8, seed uint64) {
 		w, h = w%256+1, h%256+1
 		ms := testImages(rand.New(rand.NewPCG(seed, 5)), int(w), int(h))
-		names := []string{"rgba", "nrgba", "gray", "gray16", "rgba64", "nrgba64", "paletted", "cmyk-generic"}
+		names := []string{"rgba", "nrgba", "gray", "gray16", "rgba64", "nrgba64", "paletted", "cmyk"}
 		roundTrip(t, ms[names[int(kind)%len(names)]], Encoder{
 			Options: Options{Compression: CompressionType(comp % 3), Predictor: pred}, Workers: int(workers%16) + 1})
 	})

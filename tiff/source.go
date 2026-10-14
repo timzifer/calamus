@@ -6,7 +6,8 @@ import "image"
 // horizontal predictor applied if asked for. Colour types follow
 // golang.org/x/image/tiff: Paletted (8 bits and a colour map), Gray,
 // Gray16, NRGBA and NRGBA64 (unassociated alpha), RGBA and RGBA64
-// (associated alpha), anything else as RGBA through At.
+// (associated alpha), anything else as RGBA through At; and CMYK as
+// separated (ink) samples, which x/image/tiff writes as RGBA.
 type source struct {
 	m             image.Image
 	b             image.Rectangle
@@ -30,6 +31,8 @@ func newSource(m image.Image, predictor bool) *source {
 		}
 	case *image.Gray:
 		s.photometric, s.bitsPerSample, s.bpp = pBlackIsZero, []uint32{8}, 1
+	case *image.CMYK:
+		s.photometric, s.bitsPerSample, s.bpp = pSeparated, []uint32{8, 8, 8, 8}, 4
 	case *image.Gray16:
 		s.photometric, s.bitsPerSample, s.bpp = pBlackIsZero, []uint32{16}, 2
 	case *image.NRGBA:
@@ -73,6 +76,9 @@ func (s *source) row(y int, dst []byte) {
 		swap16(dst, m.Pix[m.PixOffset(x0, y):][:2*w])
 		s.predict16(dst, 1)
 	case *image.NRGBA:
+		copy(dst, m.Pix[m.PixOffset(x0, y):][:4*w])
+		s.predict8(dst, 4)
+	case *image.CMYK:
 		copy(dst, m.Pix[m.PixOffset(x0, y):][:4*w])
 		s.predict8(dst, 4)
 	case *image.RGBA:
