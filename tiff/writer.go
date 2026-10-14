@@ -3,7 +3,8 @@
 // strips are compressed concurrently.
 //
 // It writes what golang.org/x/image/tiff writes (the same colour types and
-// tags), with LZW besides Deflate, and the horizontal predictor for both.
+// tags), with LZW besides Deflate, and the horizontal predictor for both;
+// besides, an *image.CMYK as separated CMYK samples, and an ICC profile.
 package tiff
 
 import (
@@ -33,6 +34,10 @@ type Options struct {
 	// Predictor stores each sample as the difference to the one before it
 	// in the row, which helps Deflate and LZW on photos and gradients.
 	Predictor bool
+	// ICCProfile, if not empty, is embedded (tag 34675): the colour space
+	// the samples are in, such as the CMYK profile of a press for an
+	// *image.CMYK. It is written as given.
+	ICCProfile []byte
 }
 
 // Encoder configures TIFF encoding.
@@ -68,11 +73,14 @@ const (
 	tResolutionUnit            = 296
 	tPredictor                 = 317
 	tColorMap                  = 320
+	tInkSet                    = 332
 	tExtraSamples              = 338
+	tICCProfile                = 34675
 
-	dtShort    = 3
-	dtLong     = 4
-	dtRational = 5
+	dtShort     = 3
+	dtLong      = 4
+	dtRational  = 5
+	dtUndefined = 7
 
 	cNone    = 1
 	cLZW     = 5
@@ -81,6 +89,9 @@ const (
 	pBlackIsZero = 1
 	pRGB         = 2
 	pPaletted    = 3
+	pSeparated   = 5
+
+	inkSetCMYK = 1
 
 	prNone       = 1
 	prHorizontal = 2
@@ -191,28 +202,37 @@ func (enc *Encoder) Encode(w io.Writer, m image.Image) error {
 		pr = prHorizontal
 	}
 	ifd := []ifdEntry{
-		{tImageWidth, dtShort, []uint32{uint32(b.Dx())}},
-		{tImageLength, dtShort, []uint32{uint32(b.Dy())}},
-		{tBitsPerSample, dtShort, src.bitsPerSample},
-		{tCompression, dtShort, []uint32{compression}},
-		{tPhotometricInterpretation, dtShort, []uint32{src.photometric}},
-		{tStripOffsets, dtLong, offsets},
-		{tSamplesPerPixel, dtShort, []uint32{uint32(len(src.bitsPerSample))}},
-		{tRowsPerStrip, dtShort, []uint32{uint32(rps)}},
-		{tStripByteCounts, dtLong, counts},
+		{tImageWidth, dtShort, []uint32{uint32(b.Dx())}, nil},
+		{tImageLength, dtShort, []uint32{uint32(b.Dy())}, nil},
+		{tBitsPerSample, dtShort, src.bitsPerSample, nil},
+		{tCompression, dtShort, []uint32{compression}, nil},
+		{tPhotometricInterpretation, dtShort, []uint32{src.photometric}, nil},
+		{tStripOffsets, dtLong, offsets, nil},
+		{tSamplesPerPixel, dtShort, []uint32{uint32(len(src.bitsPerSample))}, nil},
+		{tRowsPerStrip, dtShort, []uint32{uint32(rps)}, nil},
+		{tStripByteCounts, dtLong, counts, nil},
 		// No resolution is known; 72 dpi, as golang.org/x/image/tiff writes.
-		{tXResolution, dtRational, []uint32{72, 1}},
-		{tYResolution, dtRational, []uint32{72, 1}},
-		{tResolutionUnit, dtShort, []uint32{resPerInch}},
+		{tXResolution, dtRational, []uint32{72, 1}, nil},
+		{tYResolution, dtRational, []uint32{72, 1}, nil},
+		{tResolutionUnit, dtShort, []uint32{resPerInch}, nil},
 	}
 	if pr != prNone {
-		ifd = append(ifd, ifdEntry{tPredictor, dtShort, []uint32{pr}})
+		ifd = append(ifd, ifdEntry{tPredictor, dtShort, []uint32{pr}, nil})
 	}
 	if len(src.colorMap) != 0 {
-		ifd = append(ifd, ifdEntry{tColorMap, dtShort, src.colorMap})
+		ifd = append(ifd, ifdEntry{tColorMap, dtShort, src.colorMap, nil})
 	}
 	if src.extraSamples > 0 {
-		ifd = append(ifd, ifdEntry{tExtraSamples, dtShort, []uint32{src.extraSamples}})
+		ifd = append(ifd, ifdEntry{tExtraSamples, dtShort, []uint32{src.extraSamples}, nil})
+	}
+	if src.photometric == pSeparated {
+		ifd = append(ifd, ifdEntry{tInkSet, dtShort, []uint32{inkSetCMYK}, nil})
+	}
+	if len(enc.ICCProfile) != 0 {
+		if int64(len(enc.ICCProfile)) >= 1<<32-(8+total) {
+			return errors.New("tiff: file too large")
+		}
+		ifd = append(ifd, ifdEntry{tag: tICCProfile, datatype: dtUndefined, raw: enc.ICCProfile})
 	}
 	if rps > 0xffff || b.Dx() > 0xffff || b.Dy() > 0xffff {
 		for i := range ifd {
@@ -241,9 +261,10 @@ type ifdEntry struct {
 	tag      int
 	datatype int
 	data     []uint32
+	raw      []byte // the bytes of a dtUndefined value
 }
 
-var typeLen = map[int]int{dtShort: 2, dtLong: 4, dtRational: 8}
+var typeLen = map[int]int{dtShort: 2, dtLong: 4, dtRational: 8, dtUndefined: 1}
 
 // ifdBytes lays out an IFD at offset: the entries in ascending tag order,
 // then the values longer than four bytes.
@@ -259,17 +280,23 @@ func ifdBytes(offset uint32, d []ifdEntry) []byte {
 		le.PutUint16(p[0:], uint16(e.tag))
 		le.PutUint16(p[2:], uint16(e.datatype))
 		count := len(e.data)
-		if e.datatype == dtRational {
+		switch e.datatype {
+		case dtRational:
 			count /= 2
+		case dtUndefined:
+			count = len(e.raw)
 		}
 		le.PutUint32(p[4:], uint32(count))
-		val := make([]byte, 0, count*typeLen[e.datatype])
-		for _, v := range e.data {
-			switch e.datatype {
-			case dtShort:
-				val = le.AppendUint16(val, uint16(v))
-			default:
-				val = le.AppendUint32(val, v)
+		val := e.raw
+		if e.datatype != dtUndefined {
+			val = make([]byte, 0, count*typeLen[e.datatype])
+			for _, v := range e.data {
+				switch e.datatype {
+				case dtShort:
+					val = le.AppendUint16(val, uint16(v))
+				default:
+					val = le.AppendUint32(val, v)
+				}
 			}
 		}
 		if len(val) <= 4 {
