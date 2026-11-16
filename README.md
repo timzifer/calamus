@@ -178,7 +178,9 @@ Pillow for a sample), and a fuzz test does so for random images.
 
 A drop-in for `golang.org/x/image/tiff`'s encoder: the same colour types
 and tags, plus **LZW** and the horizontal **predictor** for Deflate and
-LZW (x/image writes neither). Strips are compressed independently by
+LZW (x/image writes neither), an `*image.CMYK` as **CMYK** (separated)
+samples where x/image converts it to RGB, and an embedded **ICC profile**
+(`Options.ICCProfile`). Strips are compressed independently by
 design, so they are compressed concurrently; the IFD follows them.
 
 ```go
@@ -195,8 +197,10 @@ files up to 1.6 % larger. LZW and the predictor are other configurations,
 compared in `go test -bench TIFFConfigurations` in [bench](bench/README.md).
 
 Tests decode every colour type, compression, predictor and worker count
-with x/image/tiff and compare the pixels; libtiff (through Pillow) read
-all 30 combinations of a sample with several strips alike; the LZW coder
+with x/image/tiff and compare the pixels (CMYK, which x/image does not
+read, with the test's own reader); libtiff (through Pillow) read all 30
+combinations of a sample with several strips alike, and the 6 of a CMYK
+sample with its profile; the LZW coder
 (MSB first, with TIFF's early change) has a round-trip fuzz test.
 
 ## GIF
